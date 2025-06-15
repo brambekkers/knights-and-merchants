@@ -1,75 +1,21 @@
-# Nuxt Minimal Starter
+# Knights and Merchants
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+This is a remake of the classic real-time strategy game "Knights and Merchants" using javascript. This project is a work in progress and aims to replicate the original game's mechanics and features. This project is build with Vue and Nuxt.js.
 
-## Setup
+## Features for now (WIP)
+- Game layout
+- Basic screen navigation
+- Basic building placement (no construction animation yet)
+- Basic unit movement
 
-Make sure to install dependencies:
-
+## Installation
 ```bash
-# npm
-npm install
+# clone the repository
+git clone https://github.com/brambekkers/knights-and-merchants.git
 
-# pnpm
+# install
 pnpm install
 
-# yarn
-yarn install
-
-# bun
-bun install
+# run dev server
+pnpm run dev
 ```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
