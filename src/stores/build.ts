@@ -1,4 +1,4 @@
-import buildingInfo from '@/constant/buildingInfo'
+import { buildingInfo } from '@/constant/buildingInfo'
 
 export const useBuildStore = defineStore('build', () => {
   const { menu, buildSelect } = storeToRefs(useSidebarStore())

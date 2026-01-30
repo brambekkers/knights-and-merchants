@@ -1,11 +1,15 @@
 <script setup lang="ts">
-  import buildingInfo from '@/constant/buildingInfo'
+  import { buildingInfo } from '@/constant/buildingInfo'
   const { cellSize } = useMapStore()
 
   const { type, x, y } = defineProps<{
     type: Building
     x: number
     y: number
+  }>()
+
+  const emit = defineEmits<{
+    click: []
   }>()
 
   const buildingWidth = computed(() => buildingInfo[type].pattern[0].length * cellSize + 'px')
@@ -15,7 +19,7 @@
 </script>
 
 <template>
-  <div class="image-container">
+  <div class="image-container" @click="emit('click')">
     <GameBuildingSchool v-if="type === 'school'" />
     <GameBuildingInn v-if="type === 'inn'" />
     <GameBuildingQuarry v-if="type === 'quarry'" />
@@ -56,9 +60,15 @@
     top: v-bind(buildingTop);
     width: v-bind(buildingWidth);
     height: v-bind(buildingHeight);
+    cursor: pointer;
+    transition: filter 0.15s ease;
 
     img {
       scale: 1.1;
+    }
+
+    &:hover {
+      filter: brightness(1.2);
     }
   }
 </style>

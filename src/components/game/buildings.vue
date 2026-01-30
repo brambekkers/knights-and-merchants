@@ -1,5 +1,6 @@
 <script setup lang="ts">
   const { players } = storeToRefs(usePlayersStore())
+  const { selectBuilding } = useSidebarStore()
 </script>
 
 <template>
@@ -12,7 +13,8 @@
       <GameBuildingBase
         :type="building.type"
         :x="building.x"
-        :y="building.y" />
+        :y="building.y"
+        @click="selectBuilding(building)" />
     </div>
   </div>
 </template>

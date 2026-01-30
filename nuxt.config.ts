@@ -7,5 +7,11 @@ export default defineNuxtConfig({
   imports: {
     dirs: ['stores', 'types']
   },
-  modules: ['@pinia/nuxt', '@vueuse/nuxt']
+  modules: ['@pinia/nuxt', '@vueuse/nuxt', '@nuxtjs/i18n'],
+  i18n: {
+    locales: [{ code: 'en', file: 'en.json' }],
+    defaultLocale: 'en',
+    langDir: 'locales',
+    strategy: 'no_prefix'
+  }
 })

@@ -1,4 +1,4 @@
-import { buildingInfo } from '@/constant/buildingInfo'
+import type { Resource } from './Resources'
 export type Building =
   | 'school'
   | 'inn'
@@ -36,7 +36,7 @@ export type GenerateInfo = {
   output: { [key in Resource]?: number }
 }
 
-export type buildingInfo = {
+export type BuildingInfo = {
   [key in Building]: {
     stone: number
     wood: number

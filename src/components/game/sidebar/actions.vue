@@ -1,5 +1,13 @@
 <script setup lang="ts">
-  const { menu } = storeToRefs(useSidebarStore())
+  const { menu, selectedBuilding } = storeToRefs(useSidebarStore())
+  const { deselectBuilding } = useSidebarStore()
+
+  const switchMenu = (newMenu: 'build' | 'stats' | 'ratios' | 'menu') => {
+    if (selectedBuilding.value) {
+      deselectBuilding()
+    }
+    menu.value = newMenu
+  }
 </script>
 
 <template>
@@ -8,28 +16,29 @@
       <button>
         <img
           src="@/assets/ui/buttons/build.png"
-          @click="menu = 'build'" />
+          @click="switchMenu('build')" />
       </button>
       <button>
         <img
           src="@/assets/ui/buttons/ratios.png"
-          @click="menu = 'ratios'" />
+          @click="switchMenu('ratios')" />
       </button>
       <button>
         <img
           src="@/assets/ui/buttons/stats.png"
-          @click="menu = 'stats'" />
+          @click="switchMenu('stats')" />
       </button>
       <button>
         <img
           src="@/assets/ui/buttons/menu.png"
-          @click="menu = 'menu'" />
+          @click="switchMenu('menu')" />
       </button>
     </div>
     <section
       class="menu"
       v-if="menu">
       <GameSidebarMenusBuild v-if="menu === 'build'" />
+      <GameSidebarMenusBuildingInfo v-if="menu === 'building'" />
     </section>
   </div>
 </template>

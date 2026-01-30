@@ -55,6 +55,7 @@
     left: 0;
     z-index: 800;
     width: min-content;
+    pointer-events: none;
 
     .tile-row {
       display: flex;

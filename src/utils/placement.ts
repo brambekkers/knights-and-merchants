@@ -1,4 +1,4 @@
-import buildingInfo from '@/constant/buildingInfo'
+import { buildingInfo } from '@/constant/buildingInfo'
 
 type BuildingInfo = Vector2D & {
   map: Grid

@@ -1,5 +1,5 @@
 import { players as level1Players } from '@/constant/maps/map1'
-import buildingInfo from '@/constant/buildingInfo'
+import { buildingInfo } from '@/constant/buildingInfo'
 
 export const usePlayersStore = defineStore('players', () => {
   const currentPlayer = ref<number>(0)

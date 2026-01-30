@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(timeout 15 pnpm dev:*)",
+      "Bash(timeout 20 pnpm dev:*)"
     ]
   }
 }
