@@ -49,7 +49,9 @@ export const useBuildStore = defineStore('build', () => {
 
     const building = {
       ...middlePosition.value,
-      type: buildSelect.value as Building
+      type: buildSelect.value as Building,
+      stock: {},
+      generating: false
     }
     // add road on the entrance of the building
     const lastRowIndex = buildingInfo[buildSelect.value as Building].pattern.length - 1

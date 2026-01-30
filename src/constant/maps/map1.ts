@@ -6,42 +6,52 @@ const players: Players = [
       {
         x: 3,
         y: 1,
-        type: 'school'
+        type: 'school',
+        stock: {}
       },
       {
         x: 7,
         y: 1,
-        type: 'inn'
+        type: 'inn',
+        stock: {}
       },
       {
         x: 6,
         y: 6,
-        type: 'storehouse'
+        type: 'storehouse',
+        stock: {}
       },
       {
         x: 12,
         y: 5,
-        type: 'farm'
+        type: 'farm',
+        stock: {}
       },
       {
         x: 10,
         y: 9,
-        type: 'mill'
+        type: 'mill',
+        stock: {
+          wheat: 5
+        }
       },
       {
         x: 6,
         y: 10,
-        type: 'bakery'
+        type: 'bakery',
+        stock: {}
       },
       {
         x: 1,
         y: 11,
-        type: 'vineyard'
+        type: 'vineyard',
+        stock: {}
       },
       {
         x: 14,
         y: 12,
-        type: 'watchtower'
+        type: 'watchtower',
+        stock: {}
       }
     ],
     roads: [

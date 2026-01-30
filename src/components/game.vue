@@ -1,6 +1,7 @@
 <script setup>
   const gameLoop = () => {
     window.requestAnimationFrame(gameLoop)
+    usePlayersStore().update()
     useJobStore().update()
     useMovementStore().update()
   }

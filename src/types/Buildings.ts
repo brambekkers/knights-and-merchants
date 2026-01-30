@@ -1,3 +1,4 @@
+import { buildingInfo } from '@/constant/buildingInfo'
 export type Building =
   | 'school'
   | 'inn'
@@ -28,3 +29,20 @@ export type Building =
   | 'watchtower'
   | 'siegeworkshop'
   | 'marketplace'
+
+export type GenerateInfo = {
+  duration: number // in miliseconds
+  input: { [key in Resource]?: number }
+  output: { [key in Resource]?: number }
+}
+
+export type buildingInfo = {
+  [key in Building]: {
+    stone: number
+    wood: number
+    health: number
+    pattern: number[][]
+    maxStock: { [key in Resource]?: number }
+    generate: GenerateInfo | null
+  }
+}

@@ -1,5 +1,7 @@
 export type PlayerBuilding = Vector2D & {
   type: Building
+  stock: { [key in Resource]?: number }
+  generating?: boolean
 }
 
 export type CharacterId = `character-${string}`
