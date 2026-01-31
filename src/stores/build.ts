@@ -70,8 +70,12 @@ export const useBuildStore = defineStore('build', () => {
 
   const addRoad = () => {
     if (!position.value) return
+    const { x, y } = position.value
 
     if (buildSelect.value === 'road') {
+      // Check if road is blocked
+      if (map.value[y]?.[x]?.blockedRoad) return
+
       placeRoad({ map: map.value, ...position.value })
       usePlayersStore().addRoad(position.value)
     }

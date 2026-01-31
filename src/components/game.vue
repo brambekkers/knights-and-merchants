@@ -2,6 +2,7 @@
   const gameLoop = () => {
     window.requestAnimationFrame(gameLoop)
     usePlayersStore().update()
+    useDeliveryStore().update()
     useJobStore().update()
     useMovementStore().update()
   }

@@ -4,7 +4,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
   const selectedBuilding = ref<PlayerBuilding | null>(null)
 
   const selectBuilding = (building: PlayerBuilding | null) => {
-    console.log(building)
     selectedBuilding.value = building
     if (building) {
       menu.value = 'building'

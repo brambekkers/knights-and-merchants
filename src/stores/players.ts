@@ -63,5 +63,37 @@ export const usePlayersStore = defineStore('players', () => {
     })
   }
 
-  return { players, player, update, addBuilding, addRoad, addField, addVines }
+  /**
+   * Generate a unique character ID
+   */
+  const generateCharacterId = (): CharacterId => {
+    return `character-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  /**
+   * Spawn a new serf at a given position
+   */
+  const spawnSerf = (
+    position: Vector2D,
+    playerIndex: number = currentPlayer.value
+  ): Characters => {
+    const serf: Characters = {
+      id: generateCharacterId(),
+      x: position.x,
+      y: position.y,
+      state: 'idle',
+      type: 'servant'
+    }
+    players.value[playerIndex].characters.push(serf)
+    return serf
+  }
+
+  /**
+   * Get the number of serfs for a player
+   */
+  const getSerfCount = (playerIndex: number = currentPlayer.value): number => {
+    return players.value[playerIndex].characters.filter(c => c.type === 'servant').length
+  }
+
+  return { players, player, update, addBuilding, addRoad, addField, addVines, spawnSerf, getSerfCount }
 })

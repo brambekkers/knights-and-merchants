@@ -1,0 +1,8 @@
+
+.title {
+  color: #eef15c;
+  font-size: 1.2rem;
+  text-shadow: black 0.12rem 0.12rem 0, black -0.12rem -0.12rem 0, black 0.12rem -0.12rem 0, black -0.12rem 0.12rem 0;
+  text-align: center;
+  margin-bottom: 1rem;
+}

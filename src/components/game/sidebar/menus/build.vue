@@ -4,8 +4,16 @@
 
 <template>
   <div>
-    <h3 v-if="buildSelect !== 'delete'">Construct {{ buildSelect }}</h3>
-    <h3 v-else>Remove</h3>
+    <h3
+      v-if="buildSelect !== 'delete'"
+      class="title">
+      Construct {{ buildSelect }}
+    </h3>
+    <h3
+      v-else
+      class="title">
+      Remove
+    </h3>
     <div id="build">
       <!-- 1 row -->
       <img
@@ -220,13 +228,6 @@
 </template>
 
 <style scoped>
-  h3 {
-    color: #eef15c;
-    font-size: 1.2rem;
-    text-shadow: black 0.12rem 0.12rem 0, black -0.12rem -0.12rem 0, black 0.12rem -0.12rem 0, black -0.12rem 0.12rem 0;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
   #build {
     display: grid;
     gap: 0.5rem;

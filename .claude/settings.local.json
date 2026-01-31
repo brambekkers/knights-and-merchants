@@ -3,7 +3,13 @@
     "allow": [
       "Bash(cd:*)",
       "Bash(timeout 15 pnpm dev:*)",
-      "Bash(timeout 20 pnpm dev:*)"
+      "Bash(timeout 20 pnpm dev:*)",
+      "Bash(pnpm run typecheck:*)",
+      "Bash(pnpm exec nuxi typecheck:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(pnpm dev)",
+      "WebFetch(domain:www.knightsandmerchants.net)"
     ]
   }
 }

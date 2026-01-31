@@ -19,9 +19,8 @@ export const useMovementStore = defineStore('movement', () => {
         if (path.length) {
           moveCharacter(movement)
         } else {
-          char.state = 'idle' // Mark character as idle when done
-          useJobStore().onComplete(jobId) // Update job status
-          console.log(`Character ${characterId} reached destination at ${nextPosition.x}, ${nextPosition.y}`)
+          // Let onComplete handle state changes - it may trigger another movement phase
+          useJobStore().onComplete(jobId)
         }
       }
     })

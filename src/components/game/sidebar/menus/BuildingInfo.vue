@@ -42,14 +42,7 @@
     class="building-info"
     v-if="selectedBuilding"
     :key="selectedBuilding.id">
-    <header>
-      <h2>{{ t(`buildings.${selectedBuilding.type}`) }}</h2>
-      <button
-        class="close-btn"
-        @click="deselectBuilding">
-        ✕
-      </button>
-    </header>
+    <h2 class="title">{{ t(`buildings.${selectedBuilding.type}`) }}</h2>
 
     <section class="health-section">
       <label>{{ t('ui.health') }}</label>
@@ -125,35 +118,6 @@
     font-size: 0.85rem;
   }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(245, 245, 220, 0.3);
-    padding-bottom: 0.5rem;
-  }
-
-  header h2 {
-    margin: 0;
-    font-size: 1rem;
-    text-transform: capitalize;
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    color: #f5f5dc;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-  }
-
-  .close-btn:hover {
-    opacity: 1;
-  }
-
   section {
     display: flex;
     flex-direction: column;
@@ -163,7 +127,7 @@
   label {
     font-size: 0.7rem;
     text-transform: uppercase;
-    opacity: 0.7;
+
     letter-spacing: 0.05em;
   }
 
@@ -181,7 +145,6 @@
 
   .health-section .health-text {
     font-size: 0.75rem;
-    opacity: 0.8;
   }
 
   .operator-status {
@@ -197,7 +160,6 @@
   }
 
   .no-operator {
-    opacity: 0.5;
     font-style: italic;
   }
 
@@ -222,7 +184,6 @@
 
   .production-rate {
     font-size: 0.75rem;
-    opacity: 0.7;
   }
 
   .stock-grid {
@@ -246,17 +207,14 @@
   }
 
   .resource-amount {
-    opacity: 0.8;
   }
 
   .no-stock {
-    opacity: 0.5;
     font-style: italic;
     padding: 0.25rem 0;
   }
 
   .coords-section span {
     font-family: monospace;
-    opacity: 0.7;
   }
 </style>

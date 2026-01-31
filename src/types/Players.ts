@@ -21,6 +21,7 @@ export type Characters = Vector2D & {
   id: CharacterId
   state: 'idle' | 'busy'
   type: CharactersType
+  carrying?: { resource: Resource; amount: number }
 }
 
 export type Player = {

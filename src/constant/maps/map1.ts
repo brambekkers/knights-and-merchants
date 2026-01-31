@@ -37,7 +37,8 @@ const players: Players = [
         y: 9,
         type: 'mill',
         stock: {
-          corn: 5
+          corn: 4,
+          flour: 1
         }
       },
       {
@@ -116,7 +117,22 @@ const players: Players = [
     ],
     fields: [],
     vines: [],
-    characters: []
+    characters: [
+      {
+        id: 'character-1',
+        x: 7,
+        y: 8,
+        state: 'idle',
+        type: 'servant'
+      },
+      {
+        id: 'character-2',
+        x: 7,
+        y: 8,
+        state: 'idle',
+        type: 'servant'
+      }
+    ]
   }
 ]
 
