@@ -73,11 +73,9 @@ export const usePlayersStore = defineStore('players', () => {
   /**
    * Spawn a new serf at a given position
    */
-  const spawnSerf = (
-    position: Vector2D,
-    playerIndex: number = currentPlayer.value
-  ): Characters => {
-    const serf: Characters = {
+  const spawnSerf = (position: Vector2D, playerIndex: number = currentPlayer.value): void => {
+    if (!players.value[playerIndex]) return
+    const serf: Character = {
       id: generateCharacterId(),
       x: position.x,
       y: position.y,
@@ -85,14 +83,13 @@ export const usePlayersStore = defineStore('players', () => {
       type: 'servant'
     }
     players.value[playerIndex].characters.push(serf)
-    return serf
   }
 
   /**
    * Get the number of serfs for a player
    */
   const getSerfCount = (playerIndex: number = currentPlayer.value): number => {
-    return players.value[playerIndex].characters.filter(c => c.type === 'servant').length
+    return players.value[playerIndex].characters.filter((c) => c.type === 'servant').length
   }
 
   return { players, player, update, addBuilding, addRoad, addField, addVines, spawnSerf, getSerfCount }

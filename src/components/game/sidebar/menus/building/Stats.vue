@@ -94,7 +94,6 @@
 </template>
 
 <style scoped>
-  /* Row 2: Controls */
   .building-stats {
     display: flex;
     align-items: center;

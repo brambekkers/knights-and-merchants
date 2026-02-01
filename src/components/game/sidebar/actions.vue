@@ -1,10 +1,13 @@
 <script setup lang="ts">
-  const { menu, selectedBuilding } = storeToRefs(useSidebarStore())
-  const { deselectBuilding } = useSidebarStore()
+  const { menu, selectedBuilding, selectedCharacter } = storeToRefs(useSidebarStore())
+  const { deselectBuilding, deselectCharacter } = useSidebarStore()
 
   const switchMenu = (newMenu: 'build' | 'stats' | 'ratios' | 'menu') => {
     if (selectedBuilding.value) {
       deselectBuilding()
+    }
+    if (selectedCharacter.value) {
+      deselectCharacter()
     }
     menu.value = newMenu
   }
@@ -39,6 +42,7 @@
       v-if="menu">
       <GameSidebarMenusBuild v-if="menu === 'build'" />
       <GameSidebarMenusBuildingInfo v-if="menu === 'building'" />
+      <GameSidebarMenusCharacterInfo v-if="menu === 'character'" />
     </section>
   </div>
 </template>

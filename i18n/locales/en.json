@@ -1,4 +1,19 @@
 {
+  "characters": {
+    "servant": "Serf",
+    "builder": "Builder",
+    "miner": "Miner",
+    "woodcutter": "Woodcutter",
+    "carpenter": "Carpenter",
+    "fisherman": "Fisherman",
+    "farmer": "Farmer",
+    "baker": "Baker",
+    "metallurgist": "Metallurgist",
+    "blacksmith": "Blacksmith",
+    "animalbreeder": "Animal Breeder",
+    "butcher": "Butcher",
+    "recruit": "Recruit"
+  },
   "buildings": {
     "school": "School",
     "inn": "Inn",
@@ -66,10 +81,16 @@
     "noOperator": "No operator",
     "production": "Production",
     "working": "Working...",
+    "busy": "Busy",
     "idle": "Idle",
     "perMin": "/min",
     "stock": "Stock",
     "noStorageCapacity": "No storage capacity",
-    "location": "Location"
+    "location": "Location",
+    "carrying": "Carrying",
+    "workplace": "Workplace",
+    "unassigned": "Unassigned",
+    "available": "available",
+    "noWorkplace": "No workplace needed"
   }
 }

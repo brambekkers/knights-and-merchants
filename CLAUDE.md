@@ -78,8 +78,24 @@ Resource types are categorized:
 ### 4. Character System
 - Characters have: `id`, `x`, `y`, `state`, `type`, `carrying`
 - States: `idle`, `busy`
-- Types: `servant`, `builder`, `miner`, `woodcutter`, `fisherman`, `farmer`, `baker`
+- Types: `servant`, `builder`, `miner`, `woodcutter`, `carpenter`, `fisherman`, `farmer`, `baker`, `metallurgist`, `blacksmith`, `animalbreeder`, `butcher`, `recruit`
 - Serfs (servants) handle resource delivery
+- Building operators are defined in `src/constant/characterInfo.ts`:
+
+| Building | Operator |
+|----------|----------|
+| quarry, goldmine, coalmine, ironmine | miner |
+| woodcutter | woodcutter |
+| sawmill, weaponworkshop, armoryworkshop, siegeworkshop | carpenter |
+| farm, vineyard | farmer |
+| mill, bakery | baker |
+| swinefarm, stables | animalbreeder |
+| butcher, tannery | butcher |
+| fisherman | fisherman |
+| metallurgist, ironsmithy | metallurgist |
+| weaponsmithy, armorsmithy | blacksmith |
+| barracks, watchtower | recruit |
+| storehouse, marketplace | (none) |
 
 ### 5. Job System
 Jobs have two phases:

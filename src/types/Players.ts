@@ -30,7 +30,7 @@ export type CharactersType =
   | 'butcher'
   | 'recruit'
 
-export type Characters = Vector2D & {
+export type Character = Vector2D & {
   id: CharacterId
   state: 'idle' | 'busy'
   type: CharactersType
@@ -42,6 +42,6 @@ export type Player = {
   roads: PlayerRoad[]
   fields: Vector2D[]
   vines: Vector2D[]
-  characters: Characters[]
+  characters: Character[]
 }
 export type Players = Player[]
