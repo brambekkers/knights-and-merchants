@@ -53,6 +53,7 @@ export const useBuildStore = defineStore('build', () => {
       health,
       ...middlePosition.value,
       type: buildSelect.value as Building,
+      construction: 0,
       stock: {},
       generating: false
     }
@@ -64,7 +65,6 @@ export const useBuildStore = defineStore('build', () => {
     usePlayersStore().addRoad({ x: middlePosition.value.x + x, y: middlePosition.value.y + y })
 
     // place the building
-    console.log(building)
     placeBuilding({ map: map.value, ...building })
     usePlayersStore().addBuilding(building)
 

@@ -1,24 +1,43 @@
 <script setup lang="ts">
-  const trunks = ref(1)
-  const planks = ref(1)
+  const { construction, stock } = defineProps<{
+    construction?: number // 0-100, undefined means complete
+    stock?: Stock
+  }>()
+
+  const trunks = computed(() => stock?.trunk)
+  const planks = computed(() => stock?.wood)
+
+  const isComplete = computed(() => construction === undefined || construction >= 100)
 </script>
 
 <template>
   <div id="sawmill">
-    <img
-      class="full"
-      src="/assets/building/sawmill/full.png" />
+    <!-- Construction phase -->
+    <GameBuildingConstructionRenderer
+      v-if="!isComplete"
+      class="construction"
+      building-type="sawmill"
+      :progress="construction ?? 0" />
 
-    <!-- Trunks -->
-    <img
-      class="trunk"
-      :src="`/assets/building/sawmill/trunk${trunks}.png`" />
+    <!-- Completed building -->
+    <template v-else>
+      <img
+        class="full"
+        src="/assets/building/sawmill/full.png" />
 
-    <!-- Planks -->
-    <img
-      class="plank"
-      :class="`plank${planks}`"
-      :src="`/assets/building/sawmill/planks${planks}.png`" />
+      <!-- Trunks -->
+      <img
+        v-if="trunks"
+        class="trunk"
+        :src="`/assets/building/sawmill/trunk${trunks}.png`" />
+
+      <!-- Planks -->
+      <img
+        v-if="planks"
+        class="plank"
+        :class="`plank${planks}`"
+        :src="`/assets/building/sawmill/planks${planks}.png`" />
+    </template>
   </div>
 </template>
 
@@ -26,6 +45,12 @@
   #sawmill {
     position: relative;
     translate: 95px 60px;
+
+    .construction {
+      position: absolute;
+      left: -72px;
+      top: -64px;
+    }
 
     .full {
       position: absolute;

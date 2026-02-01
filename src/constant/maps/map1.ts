@@ -23,7 +23,9 @@ const players: Players = [
         x: 6,
         y: 6,
         type: 'storehouse',
-        stock: {}
+        stock: {
+          trunk: 100
+        }
       },
       {
         id: 'building-4',

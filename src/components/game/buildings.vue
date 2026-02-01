@@ -14,6 +14,8 @@
         :type="building.type"
         :x="building.x"
         :y="building.y"
+        :construction="building.construction"
+        :stock="building.stock"
         @click="selectBuilding(building)" />
     </div>
   </div>

@@ -91,6 +91,7 @@
     "workplace": "Workplace",
     "unassigned": "Unassigned",
     "available": "available",
-    "noWorkplace": "No workplace needed"
+    "noWorkplace": "No workplace needed",
+    "construction": "Construction"
   }
 }

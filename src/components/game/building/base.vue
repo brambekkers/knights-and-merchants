@@ -2,10 +2,12 @@
   import { buildingInfo } from '@/constant/buildingInfo'
   const { cellSize } = useMapStore()
 
-  const { type, x, y } = defineProps<{
+  const { type, x, y, construction } = defineProps<{
     type: Building
     x: number
     y: number
+    construction?: number
+    stock?: Stock
   }>()
 
   const emit = defineEmits<{
@@ -19,12 +21,17 @@
 </script>
 
 <template>
-  <div class="image-container" @click="emit('click')">
+  <div
+    class="image-container"
+    @click="emit('click')">
     <GameBuildingSchool v-if="type === 'school'" />
     <GameBuildingInn v-if="type === 'inn'" />
     <GameBuildingQuarry v-if="type === 'quarry'" />
     <GameBuildingWoodcutter v-if="type === 'woodcutter'" />
-    <GameBuildingSawmill v-if="type === 'sawmill'" />
+    <GameBuildingSawmill
+      v-if="type === 'sawmill'"
+      :construction
+      :stock />
     <GameBuildingFarm v-if="type === 'farm'" />
     <GameBuildingMill v-if="type === 'mill'" />
     <GameBuildingBakery v-if="type === 'bakery'" />

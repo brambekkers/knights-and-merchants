@@ -9,6 +9,7 @@ export type PlayerBuilding = Vector2D & {
   generating?: boolean
   health?: number // Current health (defaults to max from buildingInfo)
   operator?: CharacterId // ID of the worker operating this building
+  construction?: number // 0-100 construction progress, undefined = complete
 }
 
 export type PlayerRoad = Vector2D & {

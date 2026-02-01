@@ -22,41 +22,64 @@
     <section class="dev-info">
       <hr />
       <h3 class="title">DEV MODE</h3>
-      <!-- Production Status -->
       <section
-        class="production-section"
-        v-if="info?.generate">
-        <label>{{ t('ui.production') }}</label>
-        <div class="production-info">
-          <div
-            class="production-status"
-            :class="{ active: building.generating }">
-            {{ building.generating ? t('ui.working') : t('ui.idle') }}
-          </div>
-          <div class="production-rate">{{ (60000 / info.generate.duration).toFixed(2) }}{{ t('ui.perMin') }}</div>
+        v-if="typeof building.construction === 'number' && building.construction < 100"
+        class="construction-info">
+        <label>{{ t('ui.construction') }}</label>
+
+        <div class="construction-process">
+          <button
+            @click="building.construction -= 5"
+            :disabled="building.construction === 0">
+            -
+          </button>
+          <span>{{ building.construction }} %</span>
+
+          <button
+            @click="building.construction += 5"
+            :disabled="building.construction === 100">
+            +
+          </button>
         </div>
       </section>
 
-      <!-- Stock Section -->
-      <section class="stock-section">
-        <label>{{ t('ui.stock') }}</label>
-        <div
-          class="stock-grid"
-          v-if="maxStockEntries.length > 0">
-          <div
-            v-for="[resource, max] in maxStockEntries"
-            :key="resource"
-            class="stock-item">
-            <span class="resource-name">{{ t(`resources.${resource}`) }}</span>
-            <span class="resource-amount"> {{ building.stock?.[resource as Resource] ?? 0 }} / {{ max }} </span>
+      <template v-else>
+        <!-- Production Status -->
+        <section
+          class="production-section"
+          v-if="info?.generate">
+          <label>{{ t('ui.production') }}</label>
+          <div class="production-info">
+            <div
+              class="production-status"
+              :class="{ active: building.generating }">
+              {{ building.generating ? t('ui.working') : t('ui.idle') }}
+            </div>
+            <div class="production-rate">{{ (60000 / info.generate.duration).toFixed(2) }}{{ t('ui.perMin') }}</div>
           </div>
-        </div>
-        <div
-          v-else
-          class="no-stock">
-          {{ t('ui.noStorageCapacity') }}
-        </div>
-      </section>
+        </section>
+
+        <!-- Stock Section -->
+        <section class="stock-section">
+          <label>{{ t('ui.stock') }}</label>
+          <div
+            class="stock-grid"
+            v-if="maxStockEntries.length > 0">
+            <div
+              v-for="[resource, max] in maxStockEntries"
+              :key="resource"
+              class="stock-item">
+              <span class="resource-name">{{ t(`resources.${resource}`) }}</span>
+              <span class="resource-amount"> {{ building.stock?.[resource as Resource] ?? 0 }} / {{ max }} </span>
+            </div>
+          </div>
+          <div
+            v-else
+            class="no-stock">
+            {{ t('ui.noStorageCapacity') }}
+          </div>
+        </section>
+      </template>
 
       <!-- Location -->
       <section class="coords-section">
@@ -147,6 +170,29 @@
       justify-content: space-between;
       span {
         font-family: monospace;
+      }
+    }
+
+    .construction-info {
+      display: flex;
+      justify-content: space-between;
+
+      .construction-process {
+        font-family: monospace;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+
+        button {
+          font-size: 1.2rem;
+          color: white;
+          text-align: center;
+        }
+        span {
+          width: 30px;
+          text-wrap: nowrap;
+          text-align: center;
+        }
       }
     }
   }
