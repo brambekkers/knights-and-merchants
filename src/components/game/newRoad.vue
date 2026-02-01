@@ -19,7 +19,7 @@
     <img
       v-if="isBlocked(position)"
       class="blocked"
-      src="@/assets/icons/remove.png" />
+      src="/assets/ui/remove.png" />
     <img
       v-else
       src="@/assets/icons/highlightTile.png" />

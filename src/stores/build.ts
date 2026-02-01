@@ -47,20 +47,24 @@ export const useBuildStore = defineStore('build', () => {
     if (!canPlaceBuilding.value) return
     if (!middlePosition.value || !position.value) return
 
+    const { pattern, health } = buildingInfo[buildSelect.value as Building]!
     const building = {
+      id: uid('building-') as BuildingId,
+      health,
       ...middlePosition.value,
       type: buildSelect.value as Building,
       stock: {},
       generating: false
     }
     // add road on the entrance of the building
-    const lastRowIndex = buildingInfo[buildSelect.value as Building].pattern.length - 1
-    let x = buildingInfo[buildSelect.value as Building].pattern[lastRowIndex].findIndex((tile) => tile === 2)
+    const lastRowIndex = pattern.length - 1
+    let x = pattern[lastRowIndex]?.findIndex((tile) => tile === 2) || 0
     let y = lastRowIndex
     placeRoad({ map: map.value, x: middlePosition.value.x + x, y: middlePosition.value.y + y })
     usePlayersStore().addRoad({ x: middlePosition.value.x + x, y: middlePosition.value.y + y })
 
     // place the building
+    console.log(building)
     placeBuilding({ map: map.value, ...building })
     usePlayersStore().addBuilding(building)
 

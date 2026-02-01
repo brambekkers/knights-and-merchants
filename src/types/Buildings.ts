@@ -37,12 +37,14 @@ export type GenerateInfo = {
 }
 
 export type BuildingInfo = {
-  [key in Building]: {
-    stone: number
-    wood: number
-    health: number
-    pattern: number[][]
-    maxStock: { [key in Resource]?: number }
-    generate: GenerateInfo | null
-  }
+  stone: number
+  wood: number
+  health: number
+  pattern: number[][]
+  maxStock: { [key in Resource]?: number }
+  generate: GenerateInfo | null
+}
+
+export type BuildingsInfo = {
+  [key in Building]: BuildingInfo
 }

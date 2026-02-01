@@ -3,11 +3,19 @@
 
   const { t } = useI18n()
   const sidebarStore = useSidebarStore()
-  const { deselectBuilding } = sidebarStore
   const { selectedBuilding } = storeToRefs(sidebarStore)
-  const { player } = storeToRefs(usePlayersStore())
 
   const info = computed(() => (selectedBuilding.value ? buildingInfo[selectedBuilding.value.type] : null))
+
+  const stockEntries = computed(() => {
+    if (!selectedBuilding.value?.stock) return []
+    return Object.entries(selectedBuilding.value.stock).filter(([_, amount]) => amount && amount > 0)
+  })
+
+  const maxStockEntries = computed(() => {
+    if (!info.value?.maxStock) return []
+    return Object.entries(info.value.maxStock)
+  })
 
   const healthPercent = computed(() => {
     if (!selectedBuilding.value || !info.value) return 100
@@ -20,21 +28,6 @@
     if (healthPercent.value > 33) return '#facc15'
     return '#f87171'
   })
-
-  const operator = computed(() => {
-    if (!player.value || !selectedBuilding.value?.operator) return null
-    return player.value.characters.find((c) => c.id === selectedBuilding.value?.operator)
-  })
-
-  const stockEntries = computed(() => {
-    if (!selectedBuilding.value?.stock) return []
-    return Object.entries(selectedBuilding.value.stock).filter(([_, amount]) => amount && amount > 0)
-  })
-
-  const maxStockEntries = computed(() => {
-    if (!info.value?.maxStock) return []
-    return Object.entries(info.value.maxStock)
-  })
 </script>
 
 <template>
@@ -42,32 +35,14 @@
     class="building-info"
     v-if="selectedBuilding"
     :key="selectedBuilding.id">
-    <h2 class="title">{{ t(`buildings.${selectedBuilding.type}`) }}</h2>
-
-    <section class="health-section">
-      <label>{{ t('ui.health') }}</label>
-      <div class="health-bar">
-        <div
-          class="health-fill"
-          :style="{ width: `${healthPercent}%`, backgroundColor: healthColor }"></div>
-      </div>
-      <span class="health-text"> {{ selectedBuilding.health ?? info?.health }} / {{ info?.health }} </span>
+    <section>
+      <GameSidebarMenusBuildingTitle :type="selectedBuilding.type" />
+      <GameSidebarMenusBuildingStats
+        :building="selectedBuilding"
+        :info="info" />
     </section>
 
-    <section class="operator-section">
-      <label>{{ t('ui.operator') }}</label>
-      <div
-        class="operator-status"
-        :class="{ active: operator }">
-        <span v-if="operator">{{ operator.type }}</span>
-        <span
-          v-else
-          class="no-operator"
-          >{{ t('ui.noOperator') }}</span
-        >
-      </div>
-    </section>
-
+    <!-- Production Status -->
     <section
       class="production-section"
       v-if="info?.generate">
@@ -82,6 +57,7 @@
       </div>
     </section>
 
+    <!-- Stock Section -->
     <section class="stock-section">
       <label>{{ t('ui.stock') }}</label>
       <div
@@ -102,6 +78,7 @@
       </div>
     </section>
 
+    <!-- Location -->
     <section class="coords-section">
       <label>{{ t('ui.location') }}</label>
       <span>X: {{ selectedBuilding.x }}, Y: {{ selectedBuilding.y }}</span>
@@ -118,6 +95,7 @@
     font-size: 0.85rem;
   }
 
+  /* Sections below header */
   section {
     display: flex;
     flex-direction: column;
@@ -127,40 +105,8 @@
   label {
     font-size: 0.7rem;
     text-transform: uppercase;
-
     letter-spacing: 0.05em;
-  }
-
-  .health-section .health-bar {
-    height: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .health-section .health-fill {
-    height: 100%;
-    transition: width 0.3s, background-color 0.3s;
-  }
-
-  .health-section .health-text {
-    font-size: 0.75rem;
-  }
-
-  .operator-status {
-    padding: 0.25rem 0.5rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    text-transform: capitalize;
-  }
-
-  .operator-status.active {
-    background: rgba(74, 222, 128, 0.2);
-    border: 1px solid rgba(74, 222, 128, 0.4);
-  }
-
-  .no-operator {
-    font-style: italic;
+    color: #998;
   }
 
   .production-section .production-info {
@@ -206,12 +152,10 @@
     text-transform: capitalize;
   }
 
-  .resource-amount {
-  }
-
   .no-stock {
     font-style: italic;
     padding: 0.25rem 0;
+    color: #888;
   }
 
   .coords-section span {

@@ -1,6 +1,6 @@
 <template>
   <div id="minimap">
-    <img src="@/assets/ui/minimapFrame.png" />
+    <img src="@/assets/ui/minimapFrame1.png" />
   </div>
 </template>
 
@@ -10,6 +10,7 @@
     aspect-ratio: 1 / 1;
     background-color: black;
     position: relative;
+
     img {
       position: absolute;
       top: 0;

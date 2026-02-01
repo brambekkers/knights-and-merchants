@@ -5,6 +5,7 @@ const players: Players = [
     buildings: [
       {
         id: 'building-1',
+        health: 200,
         x: 3,
         y: 1,
         type: 'school',

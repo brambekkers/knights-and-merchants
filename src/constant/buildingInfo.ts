@@ -1,6 +1,4 @@
-import type { GenerateInfo, BuildingInfo } from '@/types/Buildings'
-
-export const buildingInfo = {
+export const buildingInfo: BuildingsInfo = {
   school: {
     stone: 5,
     wood: 6,
@@ -546,4 +544,4 @@ export const buildingInfo = {
     },
     generate: null
   }
-} satisfies BuildingInfo
+}

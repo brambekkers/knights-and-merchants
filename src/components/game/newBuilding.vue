@@ -31,7 +31,7 @@
         }">
         <img
           v-if="state === 1 && isBlocked({ y: middlePosition.y + y, x: middlePosition.x + x })"
-          src="@/assets/icons/remove.png" />
+          src="/assets/ui/remove.png" />
         <img
           v-if="state === 2 && !isBlocked({ y: middlePosition.y + y, x: middlePosition.x + x })"
           src="@/assets/icons/entranceTile.png" />

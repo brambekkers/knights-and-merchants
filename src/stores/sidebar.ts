@@ -10,10 +10,5 @@ export const useSidebarStore = defineStore('sidebar', () => {
     }
   }
 
-  const deselectBuilding = () => {
-    selectedBuilding.value = null
-    menu.value = 'build'
-  }
-
-  return { menu, buildSelect, selectedBuilding, selectBuilding, deselectBuilding }
+  return { menu, buildSelect, selectedBuilding, selectBuilding }
 })

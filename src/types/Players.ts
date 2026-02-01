@@ -15,7 +15,20 @@ export type PlayerRoad = Vector2D & {
   id: RoadId
 }
 
-export type CharactersType = 'servant' | 'builder' | 'miner' | 'woodcutter' | 'fisherman' | 'farmer' | 'baker'
+export type CharactersType =
+  | 'servant'
+  | 'builder'
+  | 'miner'
+  | 'woodcutter'
+  | 'carpenter'
+  | 'fisherman'
+  | 'farmer'
+  | 'baker'
+  | 'metallurgist'
+  | 'blacksmith'
+  | 'animalbreeder'
+  | 'butcher'
+  | 'recruit'
 
 export type Characters = Vector2D & {
   id: CharacterId

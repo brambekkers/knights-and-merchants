@@ -45,13 +45,14 @@
 
 <style scoped>
   #actions {
-    background-image: url('@/assets/ui/sidebarBg1.png');
+    background-image: url('@/assets/ui/sidebarBg2.png');
     background-repeat: repeat-y;
     background-size: 100%;
     flex-grow: 1;
 
     display: flex;
     flex-direction: column;
+    padding-right: 13%;
 
     #main-actions {
       display: flex;

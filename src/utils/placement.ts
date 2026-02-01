@@ -1,15 +1,15 @@
 import { buildingInfo } from '@/constant/buildingInfo'
 
-type BuildingInfo = Vector2D & {
+type BuildingStats = Vector2D & {
   map: Grid
   type: Building
 }
 
-type RoadInfo = Vector2D & {
+type RoadStats = Vector2D & {
   map: Grid
 }
 
-export const placeBuilding = (info: BuildingInfo) => {
+export const placeBuilding = (info: BuildingStats) => {
   const buildInfo = buildingInfo[info.type]
   if (!buildInfo) return
 
@@ -29,7 +29,7 @@ export const placeBuilding = (info: BuildingInfo) => {
   }
 }
 
-export const placeRoad = (info: RoadInfo) => {
+export const placeRoad = (info: RoadStats) => {
   // Check if the road can be placed
   if (info.map[info.y][info.x].blockedRoad) return false
 

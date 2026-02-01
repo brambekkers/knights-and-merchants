@@ -19,6 +19,6 @@
   button {
     background-color: transparent;
     border: none;
-    cursor: pointer;
+    cursor: url('/assets/ui/pointer.png'), pointer;
   }
 </style>

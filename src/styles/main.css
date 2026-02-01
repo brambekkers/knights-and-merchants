@@ -1,3 +1,7 @@
+/* Custom cursor for the game */
+* {
+  cursor: url('/assets/ui/pointer.png'), auto;
+}
 
 .title {
   color: #eef15c;
