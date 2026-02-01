@@ -1,4 +1,7 @@
 <script setup>
+  const sidebarStore = useSidebarStore()
+  const { menu, buildSelect, selectedBuilding, selectedCharacter } = storeToRefs(sidebarStore)
+
   const gameLoop = () => {
     window.requestAnimationFrame(gameLoop)
     usePlayersStore().update()
@@ -6,6 +9,26 @@
     useJobStore().update()
     useMovementStore().update()
   }
+
+  const escapeAction = () => {
+    buildSelect.value = null
+    selectedBuilding.value = null
+    selectedCharacter.value = null
+  }
+
+  const escapeMenus = () => {
+    menu.value = ''
+    escapeAction()
+  }
+
+  // add event listner for escape key
+  document.addEventListener('keyup', (e) => {
+    if (e.key === 'Escape') escapeMenus()
+  })
+  document.addEventListener('contextmenu', (event) => {
+    event.preventDefault()
+    escapeAction()
+  })
 
   onMounted(() => {
     gameLoop()

@@ -2,7 +2,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
   const menu = ref<'build' | 'stats' | 'ratios' | 'menu' | 'building' | 'character'>('build')
   const buildSelect = ref<Building | 'road' | 'vines' | 'field' | 'delete' | null>(null)
   const selectedBuilding = ref<PlayerBuilding | null>(null)
-  const selectedCharacter = ref<Characters | null>(null)
+  const selectedCharacter = ref<Character | null>(null)
 
   const selectBuilding = (building: PlayerBuilding | null) => {
     selectedBuilding.value = building
@@ -17,7 +17,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
     menu.value = 'build'
   }
 
-  const selectCharacter = (character: Characters | null) => {
+  const selectCharacter = (character: Character | null) => {
     selectedCharacter.value = character
     selectedBuilding.value = null
     if (character) {

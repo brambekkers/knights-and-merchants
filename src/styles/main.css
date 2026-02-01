@@ -1,6 +1,13 @@
 /* Custom cursor for the game */
 * {
   cursor: url('/assets/ui/pointer.png'), auto;
+
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;  
 }
 
 .title {
@@ -10,3 +17,4 @@
   text-align: center;
   margin-bottom: 1rem;
 }
+
