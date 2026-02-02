@@ -53,7 +53,7 @@ export const useBuildStore = defineStore('build', () => {
       health,
       ...middlePosition.value,
       type: buildSelect.value as Building,
-      construction: 0,
+      construction: 0, // Marks as under construction
       stock: {},
       generating: false
     }
@@ -62,11 +62,24 @@ export const useBuildStore = defineStore('build', () => {
     let x = pattern[lastRowIndex]?.findIndex((tile) => tile === 2) || 0
     let y = lastRowIndex
     placeRoad({ map: map.value, x: middlePosition.value.x + x, y: middlePosition.value.y + y })
-    usePlayersStore().addRoad({ x: middlePosition.value.x + x, y: middlePosition.value.y + y })
+    usePlayersStore().addRoad({
+      x: middlePosition.value.x + x,
+      y: middlePosition.value.y + y,
+      id: uid('road-') as RoadId
+    })
 
-    // place the building
+    // place the building footprint (blocks tiles)
     placeBuilding({ map: map.value, ...building })
     usePlayersStore().addBuilding(building)
+
+    // Create construction site for this building
+    useConstructionStore().createConstructionSite({
+      type: 'building',
+      x: middlePosition.value.x,
+      y: middlePosition.value.y,
+      buildingType: buildSelect.value as Building,
+      buildingId: building.id
+    })
 
     // reset building selection
     buildSelect.value = null
@@ -80,13 +93,67 @@ export const useBuildStore = defineStore('build', () => {
       // Check if road is blocked
       if (map.value[y]?.[x]?.blockedRoad) return
 
-      placeRoad({ map: map.value, ...position.value })
-      usePlayersStore().addRoad(position.value)
+      // Create construction site for road (requires builder + 1 stone)
+      const site = useConstructionStore().createConstructionSite({
+        type: 'road',
+        x,
+        y
+      })
+
+      if (!site) {
+        console.warn('Cannot place road: no adjacent road for builder access')
+        return
+      }
+
+      // Mark tile as planned (not yet a road, but blocked for other placement)
+      if (map.value[y]?.[x]) {
+        map.value[y][x].beingBuild = true
+        map.value[y][x].blockedRoad = true
+      }
     }
 
     if (buildSelect.value === 'field') {
+      // Check if blocked
+      if (map.value[y]?.[x]?.blockedRoad) return
+
+      // Create construction site for field (no resources needed)
+      const site = useConstructionStore().createConstructionSite({
+        type: 'field',
+        x,
+        y
+      })
+
+      if (!site) {
+        console.warn('Cannot place field: no adjacent road for builder access')
+        return
+      }
+
+      // Mark tile as blocked
+      if (map.value[y]?.[x]) {
+        map.value[y][x].blockedRoad = true
+      }
     }
+
     if (buildSelect.value === 'vines') {
+      // Check if blocked
+      if (map.value[y]?.[x]?.blockedRoad) return
+
+      // Create construction site for vines (requires 1 wood)
+      const site = useConstructionStore().createConstructionSite({
+        type: 'vines',
+        x,
+        y
+      })
+
+      if (!site) {
+        console.warn('Cannot place vines: no adjacent road for builder access')
+        return
+      }
+
+      // Mark tile as blocked
+      if (map.value[y]?.[x]) {
+        map.value[y][x].blockedRoad = true
+      }
     }
   }
 

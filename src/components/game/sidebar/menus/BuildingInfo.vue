@@ -17,7 +17,12 @@
       <GameSidebarMenusBuildingStats
         :building="selectedBuilding"
         :info="info" />
+      <GameSidebarMenusBuildingStock
+        :building="selectedBuilding"
+        :info="info" />
     </section>
+
+    <GameSidebarMenusBuildingSchool v-if="selectedBuilding.type === 'school'" />
 
     <GameSidebarMenusBuildingDev
       :building="selectedBuilding"

@@ -16,6 +16,7 @@
 
     <GameGrid />
     <GameRoads />
+    <GameConstructionSites />
     <GameBuildings />
     <GamePeople />
     <GameNewRoad v-if="showRoadPosition" />

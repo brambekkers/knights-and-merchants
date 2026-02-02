@@ -12,7 +12,6 @@ type RoadStats = Vector2D & {
 export const placeBuilding = (info: BuildingStats) => {
   const buildInfo = buildingInfo[info.type]
   if (!buildInfo) return
-
   // Block all tiles that the building occupies
   for (let y = 0; y < buildInfo.pattern.length; y++) {
     for (let x = 0; x < buildInfo.pattern[0].length; x++) {
@@ -30,10 +29,12 @@ export const placeBuilding = (info: BuildingStats) => {
 }
 
 export const placeRoad = (info: RoadStats) => {
+  const { blockedRoad, beingBuild } = info.map[info.y][info.x]
   // Check if the road can be placed
-  if (info.map[info.y][info.x].blockedRoad) return false
+  if (blockedRoad && !beingBuild) return false
 
   // Mark the road tile as blocked for buildings
   info.map[info.y][info.x].blockedRoad = true
+  info.map[info.y][info.x].beingBuild = false
   info.map[info.y][info.x].isRoad = true
 }

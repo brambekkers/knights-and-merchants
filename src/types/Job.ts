@@ -15,12 +15,14 @@ export type Job = {
   destBuildingId?: BuildingId
   resource?: Resource
   amount?: number
+  // Construction job fields
+  constructionSiteId?: ConstructionSiteId
 }
 
 export type Movement = {
   characterId: CharacterId
   jobId: JobId
   status: 'ready' | 'in-progress'
-  phase: 'to-pickup' | 'to-delivery'
+  phase: 'to-pickup' | 'to-delivery' | 'to-construction' | 'working'
   path: Vector2D[]
 }

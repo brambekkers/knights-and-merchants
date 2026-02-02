@@ -58,27 +58,6 @@
             <div class="production-rate">{{ (60000 / info.generate.duration).toFixed(2) }}{{ t('ui.perMin') }}</div>
           </div>
         </section>
-
-        <!-- Stock Section -->
-        <section class="stock-section">
-          <label>{{ t('ui.stock') }}</label>
-          <div
-            class="stock-grid"
-            v-if="maxStockEntries.length > 0">
-            <div
-              v-for="[resource, max] in maxStockEntries"
-              :key="resource"
-              class="stock-item">
-              <span class="resource-name">{{ t(`resources.${resource}`) }}</span>
-              <span class="resource-amount"> {{ building.stock?.[resource as Resource] ?? 0 }} / {{ max }} </span>
-            </div>
-          </div>
-          <div
-            v-else
-            class="no-stock">
-            {{ t('ui.noStorageCapacity') }}
-          </div>
-        </section>
       </template>
 
       <!-- Location -->
@@ -137,32 +116,6 @@
 
     .production-rate {
       font-size: 0.75rem;
-    }
-
-    .stock-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      max-height: 150px;
-      overflow-y: auto;
-    }
-
-    .stock-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.25rem 0.5rem;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 4px;
-    }
-
-    .resource-name {
-      text-transform: capitalize;
-    }
-
-    .no-stock {
-      font-style: italic;
-      padding: 0.25rem 0;
-      color: #888;
     }
 
     .coords-section {

@@ -8,9 +8,18 @@ export const useMovementStore = defineStore('movement', () => {
 
   const moveCharacter = (movement: Movement) => {
     const { characterId, jobId, path } = movement
-    const nextPosition = path.shift()
     const char = players.value[0].characters.find((c) => c.id === characterId)
-    if (!char || !nextPosition) return
+    if (!char) return
+
+    // If path is empty, character is already at destination
+    if (path.length === 0) {
+      useJobStore().onComplete(jobId)
+      return
+    }
+
+    const nextPosition = path.shift()
+    if (!nextPosition) return
+
     gsap.to(char, {
       ...nextPosition,
       duration: movementSpeedMap[movementSpeed.value],

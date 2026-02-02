@@ -1,28 +1,40 @@
-import { buildingInfo } from '@/constant/buildingInfo'
-
+/**
+ * General job store - manages job queue and dispatches to character-specific job stores
+ *
+ * Job types are handled by specialized stores in jobs/:
+ * - Servant jobs (delivery, construction-delivery) → jobs/servant.ts
+ * - Builder jobs (construction) → jobs/builder.ts
+ *
+ * This store handles:
+ * - Job queue management
+ * - Job assignment to available characters
+ * - Dispatching completion events to appropriate job stores
+ */
 export const useJobStore = defineStore('job', () => {
   const { players } = storeToRefs(usePlayersStore())
   const { movements } = storeToRefs(useMovementStore())
   const { map } = useMapStore()
 
-  // Start with empty jobs array - delivery store will populate it
+  // Job queue - populated by delivery store and construction store
   const jobs = ref<Job[]>([])
 
   /**
    * Find an idle character of the specified type
+   * Marks the character as busy if found
    */
-  const getAvailableCharacters = (char: CharactersType) => {
+  const getAvailableCharacter = (charType: CharactersType): Character | null => {
     const player = players.value[0]
-    const res = player.characters.find((c) => c.type === char && c.state === 'idle')
-    if (!res) return null
-    res.state = 'busy'
-    return res
+    if (!player) return null
+    const character = player.characters.find((c) => c.type === charType && c.state === 'idle')
+    if (!character) return null
+    character.state = 'busy'
+    return character
   }
 
   /**
    * Find a character by ID
    */
-  const getCharacterById = (characterId: CharacterId): Characters | null => {
+  const getCharacterById = (characterId: CharacterId): Character | null => {
     const player = players.value[0]
     return player.characters.find((c) => c.id === characterId) || null
   }
@@ -43,34 +55,75 @@ export const useJobStore = defineStore('job', () => {
   }
 
   /**
+   * Remove a job from the queue
+   */
+  const removeJob = (jobId: JobId): void => {
+    const index = jobs.value.findIndex((j) => j.id === jobId)
+    if (index > -1) {
+      jobs.value.splice(index, 1)
+    }
+  }
+
+  /**
+   * Remove a movement from the queue
+   */
+  const removeMovement = (jobId: JobId): void => {
+    const index = movements.value.findIndex((m) => m.jobId === jobId)
+    if (index > -1) {
+      movements.value.splice(index, 1)
+    }
+  }
+
+  /**
+   * Determine the initial movement phase based on job type
+   */
+  const getInitialPhase = (job: Job): Movement['phase'] => {
+    if (job.type === 'construction') {
+      return 'to-construction'
+    }
+    return 'to-pickup'
+  }
+
+  /**
    * Main update loop - assigns jobs to available characters
    */
-  const update = () => {
+  const update = (): void => {
     if (!jobs.value.length) return
 
     for (const job of jobs.value) {
       // Only process ready jobs
       if (job.status !== 'ready') continue
 
-      const char = getAvailableCharacters(job.character)
-      if (!char) continue
+      // Find an available character of the required type
+      const character = getAvailableCharacter(job.character)
+      if (!character) continue
 
+      // Create movement record
       const movement: Movement = {
-        characterId: char.id,
+        characterId: character.id,
         jobId: job.id,
         status: 'ready',
-        phase: 'to-pickup',
-        path: [] as Vector2D[]
+        phase: getInitialPhase(job),
+        path: []
       }
 
-      // Calculate path to pickup location
-      if (char.x !== job.x1 || char.y !== job.y1) {
-        const path1 = pathfinder(map, { x1: char.x, y1: char.y, x2: job.x1, y2: job.y1 })
-        if (path1) {
-          movement.path = [...path1]
+      // Calculate path to first destination (x1, y1)
+      const targetX = job.x1
+      const targetY = job.y1
+
+      if (character.x !== targetX || character.y !== targetY) {
+        const path = pathfinder(map, {
+          x1: character.x,
+          y1: character.y,
+          x2: targetX,
+          y2: targetY
+        })
+
+        if (path) {
+          movement.path = [...path]
         } else {
-          // Cannot reach pickup - skip this job for now
-          char.state = 'idle'
+          // Cannot reach destination - release character
+          character.state = 'idle'
           continue
         }
       }
@@ -82,9 +135,9 @@ export const useJobStore = defineStore('job', () => {
 
   /**
    * Called when a character finishes moving to a destination
-   * Handles resource pickup/delivery and phase transitions
+   * Dispatches to the appropriate job store based on character type
    */
-  const onComplete = (jobId: JobId) => {
+  const onComplete = (jobId: JobId): void => {
     const job = jobs.value.find((j) => j.id === jobId)
     if (!job) return
 
@@ -94,112 +147,41 @@ export const useJobStore = defineStore('job', () => {
     const character = getCharacterById(movement.characterId)
     if (!character) return
 
-    if (movement.phase === 'to-pickup') {
-      // Arrived at source building - pick up resource
-      const sourceBuilding = job.sourceBuildingId
-        ? getBuildingById(job.sourceBuildingId)
-        : null
+    // Dispatch to appropriate job store based on character type
+    let result: { success: boolean; shouldRemoveJob: boolean; shouldRemoveMovement: boolean }
 
-      if (sourceBuilding && job.resource && job.amount) {
-        const availableStock = sourceBuilding.stock[job.resource] || 0
+    switch (job.character) {
+      case 'servant':
+        result = useServantJobStore().onComplete(job, movement, character)
+        break
 
-        if (availableStock >= job.amount) {
-          // Remove resource from source building
-          sourceBuilding.stock[job.resource] = availableStock - job.amount
+      case 'builder':
+        result = useBuilderJobStore().onComplete(job, movement, character)
+        break
 
-          // Add to character's carrying
-          character.carrying = {
-            resource: job.resource,
-            amount: job.amount
-          }
-
-          // Update job status and movement phase
-          job.status = 'delivering'
-          movement.phase = 'to-delivery'
-          movement.status = 'ready'
-
-          // Calculate path to destination
-          const path = pathfinder(map, {
-            x1: character.x,
-            y1: character.y,
-            x2: job.x2,
-            y2: job.y2
-          })
-
-          if (path && path.length > 0) {
-            movement.path = path
-          } else {
-            // Can't reach destination - drop resource back and fail job
-            sourceBuilding.stock[job.resource] = (sourceBuilding.stock[job.resource] || 0) + job.amount
-            character.carrying = undefined
-            character.state = 'idle'
-            removeJob(jobId)
-            removeMovement(jobId)
-          }
-        } else {
-          // Not enough resource at source - fail the job
-          character.state = 'idle'
-          removeJob(jobId)
-          removeMovement(jobId)
-        }
-      } else {
-        // Invalid job configuration
+      default:
+        // Unknown character type - clean up
         character.state = 'idle'
-        removeJob(jobId)
-        removeMovement(jobId)
-      }
-    } else if (movement.phase === 'to-delivery') {
-      // Arrived at destination - deliver resource
-      const destBuilding = job.destBuildingId
-        ? getBuildingById(job.destBuildingId)
-        : null
+        result = { success: false, shouldRemoveJob: true, shouldRemoveMovement: true }
+    }
 
-      if (destBuilding && character.carrying) {
-        const info = buildingInfo[destBuilding.type]
-        const maxStock = info.maxStock[character.carrying.resource] || 255
-        const currentStock = destBuilding.stock[character.carrying.resource] || 0
-
-        // Calculate how much we can deliver (respect max stock)
-        const deliverAmount = Math.min(
-          character.carrying.amount,
-          maxStock - currentStock
-        )
-
-        if (deliverAmount > 0) {
-          // Add resource to destination building
-          destBuilding.stock[character.carrying.resource] = currentStock + deliverAmount
-        }
-      }
-
-      // Clear character carrying and mark as idle
-      character.carrying = undefined
-      character.state = 'idle'
-
-      // Clean up job and movement
+    // Clean up based on job store result
+    if (result.shouldRemoveJob) {
       removeJob(jobId)
+    }
+    if (result.shouldRemoveMovement) {
       removeMovement(jobId)
     }
   }
 
-  /**
-   * Remove a job from the queue
-   */
-  const removeJob = (jobId: JobId) => {
-    const index = jobs.value.findIndex((j) => j.id === jobId)
-    if (index > -1) {
-      jobs.value.splice(index, 1)
-    }
+  return {
+    jobs,
+    update,
+    onComplete,
+    removeJob,
+    removeMovement,
+    getCharacterById,
+    getBuildingById,
+    getMovementForJob
   }
-
-  /**
-   * Remove a movement from the queue
-   */
-  const removeMovement = (jobId: JobId) => {
-    const index = movements.value.findIndex((m) => m.jobId === jobId)
-    if (index > -1) {
-      movements.value.splice(index, 1)
-    }
-  }
-
-  return { jobs, update, onComplete }
 })

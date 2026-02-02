@@ -6,6 +6,7 @@ export const createEmptyMap = (size: Vector2D): Grid => {
       map[y].push({
         isRoad: false,
         blockedBuilding: false,
+        beingBuild: false,
         blockedRoad: false
       })
     }

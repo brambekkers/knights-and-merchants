@@ -31,14 +31,19 @@ src/
 │       └── map1.ts           # Level 1 map data
 ├── stores/
 │   ├── players.ts            # Player state, resource generation
-│   ├── job.ts                # Job queue and assignment
+│   ├── job.ts                # General job dispatcher
+│   ├── jobs/                 # Character-specific job handlers
+│   │   ├── servant.ts        # Servant jobs (delivery)
+│   │   └── builder.ts        # Builder jobs (construction)
+│   ├── construction.ts       # Construction site management
 │   ├── movement.ts           # Character movement/animation
 │   ├── delivery.ts           # Serf delivery orchestration
 │   ├── map.ts                # Map state
-│   └── build.ts              # Building placement
+│   └── build.ts              # Building/road/field/vines placement
 ├── types/
 │   ├── Players.ts            # Player, Building, Character types
 │   ├── Job.ts                # Job, Movement types
+│   ├── Construction.ts       # Construction site types
 │   ├── Resources.ts          # All resource types
 │   ├── Buildings.ts          # Building type definitions
 │   ├── Map.ts                # Grid, Cell types
@@ -98,23 +103,78 @@ Resource types are categorized:
 | storehouse, marketplace | (none) |
 
 ### 5. Job System
-Jobs have two phases:
-1. **to-pickup**: Serf walks to source building
-2. **to-delivery**: Serf walks to destination building
+The job system uses a dispatcher pattern with specialized job stores:
 
-Job structure:
+**Architecture:**
+- `job.ts` - General dispatcher: manages job queue, assigns characters, routes to job stores
+- `jobs/servant.ts` - Handles servant jobs (delivery, construction-delivery)
+- `jobs/builder.ts` - Handles builder jobs (construction)
+
+**Job Types:**
+- `delivery` - Servant delivers resources between buildings
+- `construction-delivery` - Servant delivers materials to construction site
+- `construction` - Builder constructs at a site
+
+**Movement Phases:**
+- `to-pickup` - Walking to source building (servant)
+- `to-delivery` - Walking to destination (servant)
+- `to-construction` - Walking to construction site (builder)
+- `working` - Builder working at site (managed by construction store)
+
+**Job structure:**
 ```typescript
 {
   id: JobId,
   status: 'ready' | 'in-progress' | 'delivering',
-  sourceBuildingId: BuildingId,
-  destBuildingId: BuildingId,
-  resource: Resource,
-  amount: number,
-  x1, y1: pickup coordinates,
-  x2, y2: delivery coordinates
+  type: 'delivery' | 'construction-delivery' | 'construction',
+  character: CharactersType,
+  sourceBuildingId?: BuildingId,
+  destBuildingId?: BuildingId,
+  constructionSiteId?: ConstructionSiteId,
+  resource?: Resource,
+  amount?: number,
+  x1, y1: first destination coordinates,
+  x2, y2: second destination coordinates
 }
 ```
+
+### 5b. Construction System
+Builders construct roads, fields, vines, and buildings.
+
+**Construction Flow:**
+1. User places item → construction site created (marked, not built)
+2. Builder assigned → walks to site entry point
+3. Servants deliver required materials (if any)
+4. Builder works proportionally to delivered materials
+5. When 100% complete → actual item created
+
+**Resource Requirements:**
+- Roads: 1 stone
+- Fields: none (just builder work)
+- Vines: 1 wood
+- Buildings: per `buildingInfo` (stone + wood costs)
+
+**ConstructionSite structure:**
+```typescript
+{
+  id: ConstructionSiteId,
+  type: 'building' | 'road' | 'field' | 'vines',
+  x, y: position,
+  buildingType?: Building,
+  buildingId?: BuildingId,
+  requiredResources: Partial<Record<Resource, number>>,
+  deliveredResources: Partial<Record<Resource, number>>,
+  status: 'planned' | 'waiting-builder' | 'in-progress' | 'completed',
+  progress: number, // 0-100
+  assignedBuilderId?: CharacterId,
+  entryPoint?: Vector2D
+}
+```
+
+**Key behaviors:**
+- Buildings are placed with `construction: 0` (under construction) and don't generate resources until complete
+- Builder can start working with partial materials (progress limited by delivered %)
+- Construction store manages builder assignment and progress updates
 
 ### 6. Delivery System
 The delivery store orchestrates resource flow:
@@ -140,10 +200,11 @@ Priority factors:
 ```typescript
 const gameLoop = () => {
   requestAnimationFrame(gameLoop)
-  usePlayersStore().update()    // Resource generation
-  useDeliveryStore().update()   // Create delivery jobs
-  useJobStore().update()        // Assign jobs to serfs
-  useMovementStore().update()   // Animate movement
+  usePlayersStore().update()      // Resource generation (skips buildings under construction)
+  useConstructionStore().update() // Assign builders, process construction progress
+  useDeliveryStore().update()     // Create delivery jobs (includes construction site needs)
+  useJobStore().update()          // Assign jobs to characters (servants, builders)
+  useMovementStore().update()     // Animate movement
 }
 ```
 
@@ -211,12 +272,12 @@ Quarry → stone
 - Serf delivery system (pickup → delivery)
 - Character movement animation
 - UI for building selection and info display
+- **Builder construction system** (roads, fields, vines, buildings)
+- **Construction material delivery** (servants deliver to construction sites)
+- **Progressive building** (builder works proportionally to delivered materials)
 
 ### Not Yet Implemented
-- Building construction phase (needs materials delivered)
-- Laborer system for construction
-- Field/vineyard crop placement
-- Worker assignment to buildings
+- Worker assignment to buildings (operators)
 - Inn feeding system
 - Military units and combat
 - Save/Load system
@@ -234,6 +295,12 @@ Quarry → stone
 
 ### Modifying delivery priority
 Edit `calculateNeedPriority()` and `calculateOfferPriority()` in `src/stores/delivery.ts`
+
+### Adding a new character job type
+1. Create `src/stores/jobs/<character>.ts` with `onComplete()` handler
+2. Add case to switch in `job.ts` `onComplete()` to dispatch to new job store
+3. Update `getInitialPhase()` in `job.ts` if new movement phases needed
+4. Add new phases to `Movement['phase']` in `src/types/Job.ts` if needed
 
 ## Testing the Delivery System
 

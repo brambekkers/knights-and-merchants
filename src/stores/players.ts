@@ -10,7 +10,7 @@ export const usePlayersStore = defineStore('players', () => {
     players.value[playerIndex].buildings.push(building)
   }
 
-  const addRoad = (road: Vector2D, playerIndex: number = currentPlayer.value) => {
+  const addRoad = (road: PlayerRoad, playerIndex: number = currentPlayer.value) => {
     players.value[playerIndex].roads.push(road)
   }
 
@@ -34,6 +34,9 @@ export const usePlayersStore = defineStore('players', () => {
   }
 
   const generateResources = (building: PlayerBuilding) => {
+    // Skip buildings under construction (they don't produce yet)
+    if (building.construction !== undefined) return
+
     const { type, generating, stock } = building
     const { generate } = buildingInfo[type]
     if (generate && !generating && canGenerate(generate, stock)) {
@@ -86,11 +89,45 @@ export const usePlayersStore = defineStore('players', () => {
   }
 
   /**
+   * Spawn a new builder at a given position
+   */
+  const spawnBuilder = (position: Vector2D, playerIndex: number = currentPlayer.value): void => {
+    if (!players.value[playerIndex]) return
+    const builder: Character = {
+      id: generateCharacterId(),
+      x: position.x,
+      y: position.y,
+      state: 'idle',
+      type: 'builder'
+    }
+    players.value[playerIndex].characters.push(builder)
+  }
+
+  /**
    * Get the number of serfs for a player
    */
   const getSerfCount = (playerIndex: number = currentPlayer.value): number => {
     return players.value[playerIndex].characters.filter((c) => c.type === 'servant').length
   }
 
-  return { players, player, update, addBuilding, addRoad, addField, addVines, spawnSerf, getSerfCount }
+  /**
+   * Get the number of builders for a player
+   */
+  const getBuilderCount = (playerIndex: number = currentPlayer.value): number => {
+    return players.value[playerIndex].characters.filter((c) => c.type === 'builder').length
+  }
+
+  return {
+    players,
+    player,
+    update,
+    addBuilding,
+    addRoad,
+    addField,
+    addVines,
+    spawnSerf,
+    spawnBuilder,
+    getSerfCount,
+    getBuilderCount
+  }
 })

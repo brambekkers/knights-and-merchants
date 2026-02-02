@@ -24,7 +24,9 @@ const players: Players = [
         y: 6,
         type: 'storehouse',
         stock: {
-          trunk: 100
+          trunk: 100,
+          stone: 50,
+          wood: 50
         }
       },
       {
@@ -40,7 +42,7 @@ const players: Players = [
         y: 9,
         type: 'mill',
         stock: {
-          corn: 4,
+          corn: 2,
           flour: 1
         }
       },
@@ -134,6 +136,13 @@ const players: Players = [
         y: 8,
         state: 'idle',
         type: 'servant'
+      },
+      {
+        id: 'character-3',
+        x: 7,
+        y: 8,
+        state: 'idle',
+        type: 'builder'
       }
     ]
   }

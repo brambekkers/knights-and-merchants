@@ -7,6 +7,9 @@ type DeliveryRequest = {
   amount: number
   type: 'need' | 'offer'
   priority: number
+  // Construction site delivery fields
+  constructionSiteId?: ConstructionSiteId
+  isConstruction?: boolean
 }
 
 export const useDeliveryStore = defineStore('delivery', () => {
@@ -53,6 +56,11 @@ export const useDeliveryStore = defineStore('delivery', () => {
         continue
       }
 
+      // Skip buildings under construction (they don't produce yet)
+      if (building.construction !== undefined) {
+        continue
+      }
+
       // Check for OUTPUT resources that need to be collected
       if (info.generate?.output) {
         for (const resource of Object.keys(info.generate.output) as Resource[]) {
@@ -88,6 +96,35 @@ export const useDeliveryStore = defineStore('delivery', () => {
               priority: calculateNeedPriority(building.type, currentStock)
             })
           }
+        }
+      }
+    }
+
+    // Scan construction sites for material needs
+    const { constructionSites } = storeToRefs(useConstructionStore())
+
+    for (const site of constructionSites.value) {
+      // Only sites that have a builder assigned need materials delivered
+      if (site.status !== 'in-progress' && site.status !== 'waiting-builder') continue
+
+      // Skip sites with no required resources (like fields)
+      if (Object.keys(site.requiredResources).length === 0) continue
+
+      // Check what materials are still needed
+      for (const [resource, required] of Object.entries(site.requiredResources)) {
+        const delivered = site.deliveredResources[resource as Resource] || 0
+        const needed = (required as number) - delivered
+
+        if (needed > 0 && site.entryPoint) {
+          newRequests.push({
+            buildingId: site.id as unknown as BuildingId, // Reuse field for lookup
+            constructionSiteId: site.id,
+            isConstruction: true,
+            resource: resource as Resource,
+            amount: needed,
+            type: 'need',
+            priority: 90 // High priority for construction
+          })
         }
       }
     }
@@ -186,36 +223,53 @@ export const useDeliveryStore = defineStore('delivery', () => {
   }
 
   /**
-   * Create a delivery job between two buildings
+   * Create a delivery job between two buildings or to a construction site
    */
   const createDeliveryJob = (
     sourceBuilding: PlayerBuilding,
-    destBuilding: PlayerBuilding,
+    destBuilding: PlayerBuilding | null,
     resource: Resource,
-    amount: number = 1
+    amount: number = 1,
+    constructionSiteId?: ConstructionSiteId
   ): Job | null => {
     const sourceEntry = getEntryPoint(sourceBuilding)
-    const destEntry = getEntryPoint(destBuilding)
+
+    let destEntry: Vector2D | null = null
+    let description = ''
+
+    if (constructionSiteId) {
+      // Delivering to a construction site
+      const site = useConstructionStore().getSiteById(constructionSiteId)
+      if (!site || !site.entryPoint) {
+        console.warn('Cannot create delivery job: construction site not connected to road network')
+        return null
+      }
+      destEntry = site.entryPoint
+      description = `Deliver ${resource} to construction site`
+    } else if (destBuilding) {
+      // Delivering to a building
+      destEntry = getEntryPoint(destBuilding)
+      description = `Deliver ${resource} from ${sourceBuilding.type} to ${destBuilding.type}`
+    }
 
     if (!sourceEntry || !destEntry) {
-      console.warn('Cannot create delivery job: building not connected to road network')
+      console.warn('Cannot create delivery job: not connected to road network')
       return null
     }
 
     const job: Job = {
       id: `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       status: 'ready',
-      type: 'delivery',
+      type: constructionSiteId ? 'construction-delivery' : 'delivery',
       character: 'servant',
-      description: `Deliver ${resource} from ${sourceBuilding.type} to ${destBuilding.type}`,
+      description,
       x1: sourceEntry.x,
       y1: sourceEntry.y,
       x2: destEntry.x,
       y2: destEntry.y,
-      get: [resource],
-      set: [resource],
       sourceBuildingId: sourceBuilding.id,
-      destBuildingId: destBuilding.id,
+      destBuildingId: destBuilding?.id,
+      constructionSiteId,
       resource,
       amount
     }
@@ -252,6 +306,23 @@ export const useDeliveryStore = defineStore('delivery', () => {
   }
 
   /**
+   * Check if a construction delivery job already exists
+   */
+  const constructionJobExistsFor = (
+    sourceBuildingId: BuildingId,
+    constructionSiteId: ConstructionSiteId,
+    resource: Resource
+  ): boolean => {
+    return jobs.value.some(
+      (j: Job) =>
+        j.sourceBuildingId === sourceBuildingId &&
+        j.constructionSiteId === constructionSiteId &&
+        j.resource === resource &&
+        j.status !== 'delivering'
+    )
+  }
+
+  /**
    * Match resource offers to needs and create delivery jobs
    */
   const createDeliveryJobs = () => {
@@ -259,8 +330,13 @@ export const useDeliveryStore = defineStore('delivery', () => {
     const needs = requests.value.filter(r => r.type === 'need')
     const offers = requests.value.filter(r => r.type === 'offer')
 
+    // Separate construction needs from building needs
+    const buildingNeeds = needs.filter(n => !n.isConstruction)
+    const constructionNeeds = needs.filter(n => n.isConstruction)
+
     // Sort needs by priority (highest first)
-    needs.sort((a, b) => b.priority - a.priority)
+    buildingNeeds.sort((a, b) => b.priority - a.priority)
+    constructionNeeds.sort((a, b) => b.priority - a.priority)
 
     // Sort offers by priority (highest first - fullest buildings first)
     offers.sort((a, b) => b.priority - a.priority)
@@ -284,8 +360,8 @@ export const useDeliveryStore = defineStore('delivery', () => {
     // Track which offers have been fully handled
     const handledOffers = new Set<string>()
 
-    // First pass: Match offers to needs
-    for (const need of needs) {
+    // First pass: Match offers to building needs
+    for (const need of buildingNeeds) {
       const destBuilding = player.buildings.find(b => b.id === need.buildingId)
       if (!destBuilding) continue
 
@@ -318,6 +394,36 @@ export const useDeliveryStore = defineStore('delivery', () => {
       }
     }
 
+    // Construction pass: Match offers to construction site needs
+    for (const need of constructionNeeds) {
+      if (!need.constructionSiteId) continue
+
+      // Find a source for this resource
+      const productionOffers = offers.filter(
+        o => o.resource === need.resource &&
+             !handledOffers.has(`${o.buildingId}-${o.resource}`)
+      )
+
+      for (const offer of productionOffers) {
+        const sourceBuilding = player.buildings.find(b => b.id === offer.buildingId)
+        if (!sourceBuilding) continue
+
+        // Check if job already exists
+        if (constructionJobExistsFor(sourceBuilding.id, need.constructionSiteId, need.resource)) {
+          continue
+        }
+
+        // Create the delivery job to construction site
+        createDeliveryJob(sourceBuilding, null, need.resource, 1, need.constructionSiteId)
+
+        // Update remaining demand
+        const demand = remainingDemand.get(need.resource) || 0
+        remainingDemand.set(need.resource, Math.max(0, demand - 1))
+
+        break // Only create one job per need per cycle
+      }
+    }
+
     // Second pass: Send excess/unneeded resources to storehouse
     if (storehouse) {
       for (const offer of offers) {
@@ -340,8 +446,8 @@ export const useDeliveryStore = defineStore('delivery', () => {
         }
       }
 
-      // Third pass: If needs exist but no production offers, check storehouse
-      for (const need of needs) {
+      // Third pass: If building needs exist but no production offers, check storehouse
+      for (const need of buildingNeeds) {
         const destBuilding = player.buildings.find(b => b.id === need.buildingId)
         if (!destBuilding) continue
 
@@ -356,6 +462,25 @@ export const useDeliveryStore = defineStore('delivery', () => {
         if (storehouseStock > 0) {
           if (!jobExistsFor(storehouse.id, destBuilding.id, need.resource)) {
             createDeliveryJob(storehouse, destBuilding, need.resource, 1)
+          }
+        }
+      }
+
+      // Fourth pass: If construction needs exist but no production offers, check storehouse
+      for (const need of constructionNeeds) {
+        if (!need.constructionSiteId) continue
+
+        // Skip if there's already a job delivering this resource to this site
+        const hasIncomingDelivery = jobs.value.some(
+          (j: Job) => j.constructionSiteId === need.constructionSiteId && j.resource === need.resource
+        )
+        if (hasIncomingDelivery) continue
+
+        // Check if storehouse has this resource
+        const storehouseStock = storehouse.stock[need.resource] || 0
+        if (storehouseStock > 0) {
+          if (!constructionJobExistsFor(storehouse.id, need.constructionSiteId, need.resource)) {
+            createDeliveryJob(storehouse, null, need.resource, 1, need.constructionSiteId)
           }
         }
       }

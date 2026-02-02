@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   srcDir: 'src',
   imports: {
-    dirs: ['stores', 'types', 'utils']
+    dirs: ['stores/**', 'types', 'utils']
   },
   modules: ['@pinia/nuxt', '@vueuse/nuxt', '@nuxtjs/i18n'],
   i18n: {
