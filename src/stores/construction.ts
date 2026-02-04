@@ -23,7 +23,16 @@ export const useConstructionStore = defineStore('construction', () => {
   }
 
   /**
-   * Find an adjacent road tile for a position (for roads/fields/vines)
+   * Check if a position has a road under construction
+   */
+  const isRoadUnderConstruction = (x: number, y: number): boolean => {
+    return constructionSites.value.some(
+      (site) => site.type === 'road' && site.x === x && site.y === y
+    )
+  }
+
+  /**
+   * Find an adjacent road or road-under-construction for a position
    */
   const findAdjacentRoad = (x: number, y: number): Vector2D | null => {
     const offsets = [
@@ -33,6 +42,7 @@ export const useConstructionStore = defineStore('construction', () => {
       { dx: 0, dy: -1 }
     ]
 
+    // First priority: find completed road
     for (const offset of offsets) {
       const roadX = x + offset.dx
       const roadY = y + offset.dy
@@ -43,6 +53,22 @@ export const useConstructionStore = defineStore('construction', () => {
         roadX >= 0 &&
         roadX < map.value[0].length &&
         map.value[roadY][roadX].isRoad
+      ) {
+        return { x: roadX, y: roadY }
+      }
+    }
+
+    // Second priority: find road under construction
+    for (const offset of offsets) {
+      const roadX = x + offset.dx
+      const roadY = y + offset.dy
+
+      if (
+        roadY >= 0 &&
+        roadY < map.value.length &&
+        roadX >= 0 &&
+        roadX < map.value[0].length &&
+        isRoadUnderConstruction(roadX, roadY)
       ) {
         return { x: roadX, y: roadY }
       }
@@ -135,14 +161,18 @@ export const useConstructionStore = defineStore('construction', () => {
     }
 
     // For buildings, entry point will be available after road is placed
-    // For roads/fields/vines, we need an adjacent road
+    // For roads/fields/vines, try to find adjacent road for servant deliveries
+    // If no adjacent road, builder can still walk there off-road
     if (type !== 'building') {
-      const entryPoint = findAdjacentRoad(x, y)
-      if (!entryPoint) {
-        console.warn('Cannot create construction site: no adjacent road')
-        return null
+      const adjacentRoad = findAdjacentRoad(x, y)
+      if (adjacentRoad) {
+        // Has adjacent road - servants can deliver materials here
+        site.entryPoint = adjacentRoad
+      } else {
+        // No adjacent road - builder walks directly to site
+        // Materials can't be delivered until a road is connected
+        site.entryPoint = { x, y }
       }
-      site.entryPoint = entryPoint
     }
 
     constructionSites.value.push(site)
@@ -169,34 +199,29 @@ export const useConstructionStore = defineStore('construction', () => {
     const hasIdleBuilder = player.characters.some((c) => c.type === 'builder' && c.state === 'idle')
     if (!hasIdleBuilder) return false
 
-    // Get entry point
-    let entryPoint = site.entryPoint
-    if (!entryPoint && site.type === 'building') {
-      entryPoint = getConstructionEntryPoint(site)
+    // Ensure entry point is set for servant deliveries (if not already)
+    if (!site.entryPoint && site.type === 'building') {
+      const entryPoint = getConstructionEntryPoint(site)
       if (entryPoint) {
         site.entryPoint = entryPoint
       }
     }
 
-    if (!entryPoint) {
-      console.warn('Cannot assign builder: no entry point for site')
-      return false
-    }
-
     // Update status - builder will be assigned by job store
     site.status = 'waiting-builder'
 
-    // Create construction job - job store will find and assign the builder
+    // Create construction job - builder goes directly to the site position
+    // (builder can walk off-road, so no need for adjacent road entry point)
     const job: Job = {
       id: `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       status: 'ready',
       type: 'construction',
       character: 'builder',
       description: `Build ${site.type}${site.buildingType ? ` (${site.buildingType})` : ''}`,
-      x1: entryPoint.x,
-      y1: entryPoint.y,
-      x2: entryPoint.x,
-      y2: entryPoint.y,
+      x1: site.x,
+      y1: site.y,
+      x2: site.x,
+      y2: site.y,
       constructionSiteId: site.id
     }
 
@@ -260,6 +285,30 @@ export const useConstructionStore = defineStore('construction', () => {
   }
 
   /**
+   * Update entry points for nearby construction sites when a road is completed
+   * This allows material delivery to sites that were previously unreachable
+   */
+  const updateNearbyEntryPoints = (roadX: number, roadY: number): void => {
+    const offsets = [
+      { dx: 0, dy: 1 },
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: -1 }
+    ]
+
+    for (const site of constructionSites.value) {
+      // Check if this road is adjacent to the site
+      for (const offset of offsets) {
+        if (site.x === roadX + offset.dx && site.y === roadY + offset.dy) {
+          // This site is adjacent to the new road - update entry point
+          site.entryPoint = { x: roadX, y: roadY }
+          break
+        }
+      }
+    }
+  }
+
+  /**
    * Complete construction and create the actual item
    */
   const completeConstruction = (site: ConstructionSite): void => {
@@ -275,6 +324,8 @@ export const useConstructionStore = defineStore('construction', () => {
       // Place the road
       placeRoad({ map: map.value, x: site.x, y: site.y })
       usePlayersStore().addRoad({ x: site.x, y: site.y, id: uid('road-') as RoadId })
+      // Update entry points for nearby construction sites
+      updateNearbyEntryPoints(site.x, site.y)
     } else if (site.type === 'field') {
       usePlayersStore().addField({ x: site.x, y: site.y })
     } else if (site.type === 'vines') {

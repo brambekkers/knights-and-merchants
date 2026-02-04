@@ -22,27 +22,37 @@
 
 <template>
   <div
-    id="peoples"
+    id="characters"
     v-for="(player, i) of players"
     :key="`player_${i}`">
+    <!-- Servant characters use animated component -->
+    <GameCharactersServant
+      v-for="char of player.characters.filter((c) => c.type === 'servant')"
+      :key="char.id"
+      :character="char"
+      :is-selected="isSelected(char)"
+      @click="handleClick(char)" />
+
+    <!-- Other character types (fallback to static image for now) -->
     <div
-      v-for="(char, j) of player.characters"
-      :key="`character_${i}_${j}`"
+      v-for="char of player.characters.filter((c) => c.type !== 'servant')"
+      v-show="char.visible !== false"
+      :key="char.id"
       :id="char.id"
-      class="people-container"
+      class="character-container"
       :class="{ selected: isSelected(char) }"
       :style="{
         top: top(char.y),
         left: left(char.x)
       }"
       @click="handleClick(char)">
-      <div class="pill" />
+      <img :src="`/assets/characters/${char.type}.png`" />
     </div>
   </div>
 </template>
 
 <style scoped>
-  .people-container {
+  .character-container {
     position: absolute;
     z-index: 100;
     display: flex;
@@ -59,20 +69,13 @@
 
     &.selected {
       transform: scale(1.15);
-
-      .pill {
-        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 0 8px 2px rgba(255, 255, 0, 0.8);
-      }
     }
 
-    .pill {
-      width: 20px;
-      height: 35px;
-      background-color: rgba(221, 58, 221, 1);
-      content: ' ';
-      border-radius: 10px;
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-      transition: box-shadow 0.2s ease;
+    img {
+      position: absolute;
+      height: 2.5rem;
+      inset: 0;
+      margin: auto;
     }
   }
 </style>

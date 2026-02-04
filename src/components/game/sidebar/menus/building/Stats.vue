@@ -98,7 +98,6 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 8px;
 
     button {
       width: 15%;
@@ -148,6 +147,8 @@
       gap: 2px;
       height: 2rem;
       min-width: 60px;
+      max-width: 30%;
+      margin-left: auto;
 
       .health-title {
         font-size: 0.7rem;

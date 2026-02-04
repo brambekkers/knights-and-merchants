@@ -1,3 +1,5 @@
+import type { MovementType } from '@/constant/movementInfo'
+
 type PathfinderCoordinates = {
   x1: number // Starting x-coordinate
   y1: number // Starting y-coordinate
@@ -5,97 +7,271 @@ type PathfinderCoordinates = {
   y2: number // Ending y-coordinate
 }
 
-export const pathfinder = (map: Grid, coords: PathfinderCoordinates) => {
-  const { x1, y1, x2, y2 } = coords
-  const numRows = map.length
-  const numCols = map[0].length
+type PathfinderOptions = {
+  movementType: MovementType
+  /** Allow destination to be a construction site (for builders) */
+  allowConstructionDestination?: boolean
+}
 
-  // --- 1. Initial Validation ---
-  // Check if start or end points are out of bounds or not on a road
-  if (
-    x1 < 0 ||
-    x1 >= numCols ||
-    y1 < 0 ||
-    y1 >= numRows ||
-    x2 < 0 ||
-    x2 >= numCols ||
-    y2 < 0 ||
-    y2 >= numRows ||
-    !map[y1][x1].isRoad ||
-    !map[y2][x2].isRoad
-  ) {
-    console.error('Start or end point is invalid.')
-    return null // Invalid start or end
+// 8-directional movement (including diagonals)
+const MOVES = [
+  { dx: 0, dy: -1, cost: 1 }, // Up
+  { dx: 0, dy: 1, cost: 1 }, // Down
+  { dx: -1, dy: 0, cost: 1 }, // Left
+  { dx: 1, dy: 0, cost: 1 }, // Right
+  { dx: -1, dy: -1, cost: 1.4 }, // Up-Left (diagonal)
+  { dx: 1, dy: -1, cost: 1.4 }, // Up-Right (diagonal)
+  { dx: -1, dy: 1, cost: 1.4 }, // Down-Left (diagonal)
+  { dx: 1, dy: 1, cost: 1.4 } // Down-Right (diagonal)
+]
+
+/**
+ * Unified pathfinder supporting multiple movement types
+ * Uses A* algorithm with 8-directional movement (including diagonals)
+ *
+ * Movement types:
+ * - road-only: Can only move on roads
+ * - road-preferred: Prefers roads but can walk off-road, avoids other construction sites
+ * - free: Can move anywhere not blocked by buildings
+ */
+export const pathfinder = (
+  map: Grid,
+  coords: PathfinderCoordinates,
+  options: PathfinderOptions = { movementType: 'road-only' }
+): Vector2D[] | null => {
+  const { x1, y1, x2, y2 } = coords
+  const { movementType, allowConstructionDestination } = options
+  const numRows = map.length
+  const numCols = map[0]?.length ?? 0
+
+  // Check if coordinates are in bounds
+  const inBounds = (x: number, y: number): boolean => {
+    return x >= 0 && x < numCols && y >= 0 && y < numRows
   }
 
-  // --- 2. Initialization ---
-  // The queue will store objects: {x, y}
-  const queue = [{ x: x1, y: y1 }]
+  // Get cell safely
+  const getCell = (x: number, y: number): Cell | undefined => {
+    return map[y]?.[x]
+  }
 
-  // A map to store the path. `predecessor[cellKey] = {x, y}`
-  // This lets us trace our steps back from the end to the start.
-  const predecessors: Record<string, Vector2D | null> = {}
+  // Check if a tile is walkable based on movement type
+  const isWalkable = (x: number, y: number): boolean => {
+    if (!inBounds(x, y)) return false
+    const cell = getCell(x, y)
+    if (!cell) return false
 
-  // A 2D array to keep track of visited cells
-  const visited = Array(numRows)
-    .fill(false)
-    .map(() => Array(numCols).fill(false))
+    switch (movementType) {
+      case 'road-only':
+        return cell.isRoad === true
 
-  visited[y1][x1] = true
-  const startKey = `${x1},${y1}`
-  predecessors[startKey] = null // The start has no predecessor
+      case 'road-preferred':
+        if (cell.isRoad) return true
+        if (cell.blockedBuilding) return false
+        if (cell.beingBuild) return false // Avoid other construction sites
+        return true // Open terrain
 
-  // --- 3. The BFS Loop ---
-  while (queue.length > 0) {
-    const { x: currentX, y: currentY } = queue.shift() // Dequeue the first cell
+      case 'free':
+        if (cell.blockedBuilding) return false
+        return true
+
+      default:
+        return cell.isRoad === true
+    }
+  }
+
+  // Get movement cost multiplier for a tile (used by road-preferred to penalize off-road)
+  const getMovementCostMultiplier = (x: number, y: number): number => {
+    if (movementType !== 'road-preferred') return 1
+
+    const cell = getCell(x, y)
+    if (!cell) return 1
+
+    // Roads have normal cost, off-road has 1.5x penalty
+    // This makes roads preferred but allows shortcuts when significantly shorter
+    return cell.isRoad ? 1 : 1.5
+  }
+
+  // Check if a tile is walkable, but also allow blockedBuilding tiles
+  // Used for tiles adjacent to construction sites so builder can approach from any direction
+  const isWalkableOrBlockedBuilding = (x: number, y: number): boolean => {
+    if (!inBounds(x, y)) return false
+    const cell = getCell(x, y)
+    if (!cell) return false
+
+    // Allow blockedBuilding tiles (building footprint buffer zones)
+    // but still block actual obstacles like roads being built
+    if (cell.blockedRoad && !cell.isRoad) return false
+    if (cell.beingBuild) return false
+    return true
+  }
+
+  // Check if a tile is valid as a start/end point
+  // More lenient than isWalkable - allows tiles where characters can reasonably stand
+  const isValidStartPoint = (x: number, y: number): boolean => {
+    if (!inBounds(x, y)) return false
+    const cell = getCell(x, y)
+    if (!cell) return false
+
+    // Roads are always valid
+    if (cell.isRoad) return true
+
+    // Construction sites are valid (character may have just delivered there)
+    if (cell.beingBuild) return true
+
+    // For road-preferred, be extremely lenient - allow any in-bounds tile
+    // The A* algorithm will handle finding a valid path
+    if (movementType === 'road-preferred') {
+      return true
+    }
+
+    return isWalkable(x, y)
+  }
+
+  // Check if destination is valid (may differ from walkable for construction sites)
+  const isValidDestination = (x: number, y: number): boolean => {
+    if (!inBounds(x, y)) return false
+    const cell = getCell(x, y)
+    if (!cell) return false
+
+    // If construction destination is allowed, accept beingBuild tiles
+    if (allowConstructionDestination && cell.beingBuild) {
+      return true
+    }
+
+    // For road-preferred mode, use same lenient logic as start points
+    // If a character can stand somewhere (start point), they should be able to go there (destination)
+    if (movementType === 'road-preferred') {
+      return isValidStartPoint(x, y)
+    }
+
+    return isWalkable(x, y)
+  }
+
+  // Check if diagonal movement is allowed (no corner cutting)
+  const canMoveDiagonally = (fromX: number, fromY: number, dx: number, dy: number): boolean => {
+    // For diagonal moves, check that we're not cutting corners
+    if (dx !== 0 && dy !== 0) {
+      // Must be able to walk through at least one of the adjacent cardinal tiles
+      const canPassHorizontal = isWalkable(fromX + dx, fromY)
+      const canPassVertical = isWalkable(fromX, fromY + dy)
+
+      // Allow diagonal if at least one cardinal direction is open (no corner cutting)
+      return canPassHorizontal || canPassVertical
+    }
+    return true // Not a diagonal move
+  }
+
+  // Validate start and end points
+  if (!isValidStartPoint(x1, y1)) {
+    console.error(`Pathfinder (${movementType}): Start point is not walkable.`, { x1, y1 })
+    return null
+  }
+  if (!isValidDestination(x2, y2)) {
+    console.error(`Pathfinder (${movementType}): End point is not valid.`, { x2, y2 })
+    return null
+  }
+
+  // Octile distance heuristic - must be admissible (never overestimate)
+  // Uses minimum possible costs: 1.0 cardinal, 1.4 diagonal
+  const DIAGONAL_COST = 1.4
+  const CARDINAL_COST = 1.0
+  const heuristic = (x: number, y: number): number => {
+    const dx = Math.abs(x - x2)
+    const dy = Math.abs(y - y2)
+    const diagonal = Math.min(dx, dy)
+    const straight = Math.abs(dx - dy)
+    return diagonal * DIAGONAL_COST + straight * CARDINAL_COST
+  }
+
+  // A* algorithm
+  type Node = { x: number; y: number; g: number; f: number }
+  const openSet: Node[] = [{ x: x1, y: y1, g: 0, f: heuristic(x1, y1) }]
+  const gScores: Record<string, number> = { [`${x1},${y1}`]: 0 }
+  const predecessors: Record<string, Vector2D | null> = { [`${x1},${y1}`]: null }
+
+  while (openSet.length > 0) {
+    // Get node with lowest f score
+    openSet.sort((a, b) => a.f - b.f)
+    const current = openSet.shift()!
+    const { x: currentX, y: currentY, g: currentG } = current
+    const currentKey = `${currentX},${currentY}`
+
+    // Skip if we've already processed this node with a better path
+    // (handles duplicate entries in openSet from finding better routes)
+    if (gScores[currentKey] !== undefined && currentG > gScores[currentKey]) continue
 
     // Check if we've reached the destination
     if (currentX === x2 && currentY === y2) {
-      // --- 5. Reconstruct the Path ---
-      const path = []
-      let current: Vector2D | null = { x: x2, y: y2 }
-      while (current !== null) {
-        path.unshift(current) // Add to the beginning of the array
-        const key: string = `${current.x},${current.y}`
-        current = predecessors[key]
+      // Reconstruct path
+      const path: Vector2D[] = []
+      let node: Vector2D | null = { x: x2, y: y2 }
+      while (node !== null) {
+        path.unshift(node)
+        node = predecessors[`${node.x},${node.y}`] ?? null
       }
       return path
     }
 
-    // --- 4. Explore Neighbors ---
-    // Define potential moves (up, down, left, right)
-    const moves = [
-      { dx: 0, dy: -1 }, // Up
-      { dx: 0, dy: 1 }, // Down
-      { dx: -1, dy: 0 }, // Left
-      { dx: 1, dy: 0 } // Right
-    ]
-
-    for (const move of moves) {
+    // Explore neighbors (8 directions)
+    for (const move of MOVES) {
       const nextX = currentX + move.dx
       const nextY = currentY + move.dy
+      const nextKey = `${nextX},${nextY}`
 
-      // Check if the neighbor is valid
-      if (
-        nextX >= 0 &&
-        nextX < numCols &&
-        nextY >= 0 &&
-        nextY < numRows &&
-        map[nextY][nextX].isRoad &&
-        !visited[nextY][nextX]
-      ) {
-        // Mark as visited
-        visited[nextY][nextX] = true
-        // Enqueue the neighbor
-        queue.push({ x: nextX, y: nextY })
-        // Record how we got here
-        const nextKey = `${nextX},${nextY}`
+      // Check diagonal movement constraints
+      if (!canMoveDiagonally(currentX, currentY, move.dx, move.dy)) continue
+
+      // Allow reaching the destination even if it's a construction site
+      const isDestination = nextX === x2 && nextY === y2
+      // Also allow walking through blockedBuilding tiles when adjacent to destination
+      // This lets builders approach construction sites from any direction
+      const isAdjacentToDestination = allowConstructionDestination &&
+        Math.abs(nextX - x2) <= 1 && Math.abs(nextY - y2) <= 1
+      const canWalk = isDestination
+        ? isValidDestination(nextX, nextY)
+        : isAdjacentToDestination
+          ? isWalkableOrBlockedBuilding(nextX, nextY)
+          : isWalkable(nextX, nextY)
+
+      if (!canWalk) continue
+
+      // Apply cost multiplier (off-road penalty for road-preferred mode)
+      const moveCost = move.cost * getMovementCostMultiplier(nextX, nextY)
+      const tentativeG = currentG + moveCost
+
+      // Only process if we found a better path
+      if (gScores[nextKey] === undefined || tentativeG < gScores[nextKey]) {
+        gScores[nextKey] = tentativeG
         predecessors[nextKey] = { x: currentX, y: currentY }
+        openSet.push({ x: nextX, y: nextY, g: tentativeG, f: tentativeG + heuristic(nextX, nextY) })
       }
     }
   }
 
-  // --- 6. No Path Found ---
-  // If the queue becomes empty and we haven't found the end
+  // No path found
   return null
+}
+
+/**
+ * Convenience function for road-only pathfinding (servants delivering on roads)
+ */
+export const roadPathfinder = (map: Grid, coords: PathfinderCoordinates): Vector2D[] | null => {
+  return pathfinder(map, coords, { movementType: 'road-only' })
+}
+
+/**
+ * Convenience function for builder pathfinding (can go off-road, destination can be construction site)
+ */
+export const preferredPathfinder = (map: Grid, coords: PathfinderCoordinates): Vector2D[] | null => {
+  return pathfinder(map, coords, {
+    movementType: 'road-preferred',
+    allowConstructionDestination: true
+  })
+}
+
+/**
+ * Convenience function for free movement (click-to-move, future implementation)
+ */
+export const freePathfinder = (map: Grid, coords: PathfinderCoordinates): Vector2D[] | null => {
+  return pathfinder(map, coords, { movementType: 'free' })
 }

@@ -18,7 +18,7 @@
     <GameRoads />
     <GameConstructionSites />
     <GameBuildings />
-    <GamePeople />
+    <GameCharacters />
     <GameNewRoad v-if="showRoadPosition" />
     <GameNewBuilding v-if="showBuildPosition" />
   </div>

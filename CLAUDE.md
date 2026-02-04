@@ -21,12 +21,15 @@ src/
 ├── components/
 │   └── game/
 │       ├── game.vue          # Main game component with game loop
-│       ├── people.vue        # Character rendering
+│       ├── characters.vue    # Main character rendering (routes to type-specific components)
+│       ├── characters/       # Character-specific animated components
+│       │   └── Servant.vue   # Animated servant with 8-directional walking sprites
 │       ├── roads.vue         # Road rendering
 │       ├── grid.vue          # Map grid rendering
 │       └── sidebar/          # UI sidebar components
 ├── constant/
 │   ├── buildingInfo.ts       # Building definitions (costs, patterns, generation)
+│   ├── movementInfo.ts       # Character movement type mappings
 │   └── maps/
 │       └── map1.ts           # Level 1 map data
 ├── stores/
@@ -49,7 +52,7 @@ src/
 │   ├── Map.ts                # Grid, Cell types
 │   └── General.ts            # Vector2D
 └── utils/
-    ├── pathfinder.ts         # BFS pathfinding on roads
+    ├── pathfinder.ts         # A* pathfinding with movement types (8-directional)
     ├── buildingEntry.ts      # Find road tile adjacent to building
     └── placement.ts          # Building/road placement logic
 ```
@@ -81,11 +84,21 @@ Resource types are categorized:
 - **Armor**: woodenShield, ironShield, leatherArmor, ironArmor
 
 ### 4. Character System
-- Characters have: `id`, `x`, `y`, `state`, `type`, `carrying`
+- Characters have: `id`, `x`, `y`, `state`, `type`, `carrying`, `visible`
 - States: `idle`, `busy`
 - Types: `servant`, `builder`, `miner`, `woodcutter`, `carpenter`, `fisherman`, `farmer`, `baker`, `metallurgist`, `blacksmith`, `animalbreeder`, `butcher`, `recruit`
+- `visible`: Optional boolean (defaults to true), set to false when entering buildings
 - Serfs (servants) handle resource delivery
+- Builders construct roads, fields, vines, and buildings
+- Movement types per character defined in `src/constant/movementInfo.ts`
 - Building operators are defined in `src/constant/characterInfo.ts`:
+
+**Character Animation (Servant):**
+- Sprites located in `public/assets/characters/servant/`
+- 8 directions: `up`, `down`, `left`, `right`, `upLeft`, `upRight`, `downLeft`, `downRight`
+- 8 frames per direction: `direction1.png` through `direction8.png`
+- Direction calculated from position delta (watches x/y changes)
+- Animation auto-stops after 150ms of no movement
 
 | Building | Operator |
 |----------|----------|
@@ -120,6 +133,9 @@ The job system uses a dispatcher pattern with specialized job stores:
 - `to-delivery` - Walking to destination (servant)
 - `to-construction` - Walking to construction site (builder)
 - `working` - Builder working at site (managed by construction store)
+- `entering-building` - Animating from road entry point to building door
+- `inside-building` - Character hidden, waiting inside building
+- `exiting-building` - Animating from building door back to road entry point
 
 **Job structure:**
 ```typescript
@@ -192,8 +208,33 @@ Priority factors:
 
 ### 7. Movement System
 - Uses GSAP for smooth animation
-- Pathfinder uses BFS algorithm on road network
 - Movement speed configurable (0-5 levels)
+
+**Pathfinding:**
+- A* algorithm with Euclidean distance heuristic
+- 8-directional movement (cardinal: cost 1.0, diagonal: cost 1.4)
+- Corner-cutting prevention for diagonal moves
+
+**Movement Types** (defined in `constant/movementInfo.ts`):
+| Type | Behavior | Characters |
+|------|----------|------------|
+| `road-only` | Only walks on roads | Building operators (miner, baker, etc.) |
+| `road-preferred` | Prefers roads, can walk off-road, avoids construction sites | Servants, Builders |
+| `free` | Can walk anywhere not blocked by buildings | Future click-to-move units |
+
+**Pathfinder Functions:**
+```typescript
+// Main function with options
+pathfinder(map, coords, { movementType, allowConstructionDestination })
+
+// Convenience wrappers
+roadPathfinder(map, coords)       // road-only
+preferredPathfinder(map, coords)  // road-preferred + allowConstructionDestination
+freePathfinder(map, coords)       // free movement
+
+// Dynamic selection based on character type (used in job.ts)
+const movementType = getMovementType(characterType)  // from movementInfo.ts
+```
 
 ## Game Loop
 
@@ -227,7 +268,30 @@ const { map } = useMapStore()
 ### Building Entry Points
 Buildings have entry points marked with `2` in their pattern. The road tile for pickup/delivery is found adjacent to this entry point:
 ```typescript
+// Get just the road tile (entry point)
 const entryPoint = getBuildingEntryPoint(building, map)
+
+// Get both entry point and door point (for animations)
+const { entryPoint, doorPoint } = getBuildingEntryInfo(building, map)
+```
+
+### Building Entry/Exit Animation
+When servants pickup or deliver resources, they visually "enter" the building:
+1. Character walks to entry point (road tile adjacent to door)
+2. Character animates from entry point to door point (building tile)
+3. Character becomes hidden (`visible = false`)
+4. After ~800ms inside, character reappears at door
+5. Character animates from door back to entry point
+6. Pickup/delivery logic executes, job continues
+
+**Movement structure for building entry:**
+```typescript
+{
+  // ... standard movement fields
+  buildingEntryPoint?: Vector2D  // Road tile where character enters/exits
+  buildingDoorPoint?: Vector2D   // Building door tile
+  onBuildingExit?: () => void    // Callback after exiting (pickup/delivery logic)
+}
 ```
 
 ## Production Chains
@@ -275,6 +339,8 @@ Quarry → stone
 - **Builder construction system** (roads, fields, vines, buildings)
 - **Construction material delivery** (servants deliver to construction sites)
 - **Progressive building** (builder works proportionally to delivered materials)
+- **Animated character sprites** (servant walking animation, 8 directions)
+- **Building entry/exit animation** (servants visually enter/exit buildings during pickup/delivery)
 
 ### Not Yet Implemented
 - Worker assignment to buildings (operators)
@@ -301,6 +367,13 @@ Edit `calculateNeedPriority()` and `calculateOfferPriority()` in `src/stores/del
 2. Add case to switch in `job.ts` `onComplete()` to dispatch to new job store
 3. Update `getInitialPhase()` in `job.ts` if new movement phases needed
 4. Add new phases to `Movement['phase']` in `src/types/Job.ts` if needed
+
+### Adding animated sprites for a new character type
+1. Add sprite images to `public/assets/characters/<type>/`
+   - 8 directions: `up`, `down`, `left`, `right`, `upLeft`, `upRight`, `downLeft`, `downRight`
+   - 8 frames per direction: `<direction>1.png` through `<direction>8.png`
+2. Create `src/components/game/characters/<Type>.vue` (copy from `Servant.vue`)
+3. Update `src/components/game/characters.vue` to render the new component for that character type
 
 ## Testing the Delivery System
 

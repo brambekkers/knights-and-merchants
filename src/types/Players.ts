@@ -36,6 +36,7 @@ export type Character = Vector2D & {
   state: 'idle' | 'busy'
   type: CharactersType
   carrying?: { resource: Resource; amount: number }
+  visible?: boolean // defaults to true, set false when entering buildings
 }
 
 export type Player = {

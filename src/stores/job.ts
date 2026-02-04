@@ -1,3 +1,5 @@
+import { getMovementType } from '@/constant/movementInfo'
+
 /**
  * General job store - manages job queue and dispatches to character-specific job stores
  *
@@ -112,12 +114,17 @@ export const useJobStore = defineStore('job', () => {
       const targetY = job.y1
 
       if (character.x !== targetX || character.y !== targetY) {
+        // Get movement type from character type mapping
+        const movementType = getMovementType(job.character)
+        // Allow construction destination for construction jobs
+        const allowConstructionDestination = job.type === 'construction'
+
         const path = pathfinder(map, {
           x1: character.x,
           y1: character.y,
           x2: targetX,
           y2: targetY
-        })
+        }, { movementType, allowConstructionDestination })
 
         if (path) {
           movement.path = [...path]

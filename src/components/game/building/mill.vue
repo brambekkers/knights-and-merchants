@@ -6,6 +6,6 @@
 
 <style scoped>
   img {
-    translate: 10% -30%;
+    translate: 5% -30%;
   }
 </style>

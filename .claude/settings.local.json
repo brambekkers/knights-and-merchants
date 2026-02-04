@@ -10,7 +10,14 @@
       "Bash(ping:*)",
       "Bash(pnpm dev)",
       "WebFetch(domain:www.knightsandmerchants.net)",
-      "Bash(pnpm nuxt typecheck:*)"
+      "Bash(pnpm nuxt typecheck:*)",
+      "Bash(npx tsc:*)",
+      "Bash(powershell -Command \"Format-Hex -Path ''c:\\\\Programmeren\\\\Javascript\\\\kam remake\\\\public\\\\assets\\\\res\\\\gui.rx'' -Count 256\")",
+      "Bash(powershell:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(dir /b \"c:\\\\Programmeren\\\\Javascript\\\\kam remake\\\\public\\\\assets\\\\res\")",
+      "Bash(dir:*)"
     ]
   }
 }

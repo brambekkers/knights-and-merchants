@@ -23,6 +23,10 @@ export type Movement = {
   characterId: CharacterId
   jobId: JobId
   status: 'ready' | 'in-progress'
-  phase: 'to-pickup' | 'to-delivery' | 'to-construction' | 'working'
+  phase: 'to-pickup' | 'to-delivery' | 'to-construction' | 'working' | 'entering-building' | 'inside-building' | 'exiting-building'
   path: Vector2D[]
+  // Building entry/exit data
+  buildingEntryPoint?: Vector2D // Road tile where character enters/exits
+  buildingDoorPoint?: Vector2D // Door tile on the building
+  onBuildingExit?: () => void // Callback after exiting building
 }

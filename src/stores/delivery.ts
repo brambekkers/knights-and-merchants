@@ -110,12 +110,15 @@ export const useDeliveryStore = defineStore('delivery', () => {
       // Skip sites with no required resources (like fields)
       if (Object.keys(site.requiredResources).length === 0) continue
 
+      // Skip if no entry point (entry point is the site position for off-road sites)
+      if (!site.entryPoint) continue
+
       // Check what materials are still needed
       for (const [resource, required] of Object.entries(site.requiredResources)) {
         const delivered = site.deliveredResources[resource as Resource] || 0
         const needed = (required as number) - delivered
 
-        if (needed > 0 && site.entryPoint) {
+        if (needed > 0) {
           newRequests.push({
             buildingId: site.id as unknown as BuildingId, // Reuse field for lookup
             constructionSiteId: site.id,
@@ -238,10 +241,10 @@ export const useDeliveryStore = defineStore('delivery', () => {
     let description = ''
 
     if (constructionSiteId) {
-      // Delivering to a construction site
+      // Delivering to a construction site (servants can walk off-road to reach it)
       const site = useConstructionStore().getSiteById(constructionSiteId)
       if (!site || !site.entryPoint) {
-        console.warn('Cannot create delivery job: construction site not connected to road network')
+        console.warn('Cannot create delivery job: construction site has no entry point')
         return null
       }
       destEntry = site.entryPoint
